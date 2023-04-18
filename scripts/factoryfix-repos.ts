@@ -73,6 +73,7 @@ const operation = await arg("Select an operation", [
     {name: "Open Pull Requests", value: "pull"},
     {name: "List Open Pull Requests", value: "list_pulls"},
     {name: "Clone", value: "clone"},
+    {name: "Copy Repo Name", value: "copy_name"},
 ]);
 
 switch (operation) {
@@ -102,5 +103,9 @@ switch (operation) {
     case 'clone':
         await clipboard.writeText(repo.clone_url);
         await notify(`Copied ${repo.clone_url} to clipboard`);
+        break;
+    case "copy_name":
+        await clipboard.writeText(repo.name);
+        await notify(`Copied ${repo.name} to clipboard`);
         break;
 }
