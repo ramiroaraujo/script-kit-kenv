@@ -1,4 +1,4 @@
-// Name: factoryfix sort terraform alphabetically
+// Name: ff sort terraform alphabetically
 
 import "@johnlindquist/kit"
 

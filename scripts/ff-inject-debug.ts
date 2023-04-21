@@ -1,4 +1,4 @@
-// Name: factoryfix inject debug
+// Name: ff inject debug
 
 import "@johnlindquist/kit";
 
