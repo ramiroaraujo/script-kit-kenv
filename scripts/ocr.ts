@@ -29,6 +29,7 @@ const languages = [
     { name: "Portuguese", value: "por" },
     { name: "English", value: "eng" },
 ];
+//@todo train a model for typescript (https://github.com/tesseract-ocr/tesstrain)
 
 // if ctrl is pressed, show a modal to select a language
 const selectedLanguage = flag.ctrl
