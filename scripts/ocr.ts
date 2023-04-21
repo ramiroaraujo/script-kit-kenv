@@ -26,10 +26,13 @@ const recognizeText = async (filePath) => {
     return data.text;
 };
 
-//wait for 1000ms to allow the screenshot to be taken
+// Hide the Kit modal before capturing the screenshot
+await hide();
 
-await wait(1000)
+//capture the screenshot
 const filePath = await captureScreenshot();
+
+// Recognize the text
 const text = await recognizeText(filePath);
 
 if (text) {
