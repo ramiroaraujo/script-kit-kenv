@@ -123,6 +123,7 @@ let transformations = {
         const lines = text.split('\n');
         return lines.map((line, index) => `${index + 1}. ${line}`).join('\n');
     },
+    noop: text => text,
 }
 
 let options = [
@@ -353,6 +354,10 @@ let options = [
                 description: "Enter a regex to remove from all lines",
             },
         },
+    },
+    {
+        name: "No Operation",
+        description: "Do nothing to the text, if you accidentally hit Cmd + enter and need no more transformations",
     }
 ]
 
@@ -379,7 +384,7 @@ let rerun = true;
 while (rerun) {
     let transformation = await arg(
         {
-            placeholder: "Choose a text transformation",
+            placeholder: "Choose a text transformation (Cmd + enter to rerun)",
             flags,
             hint: operations.join(' > '),
         },
