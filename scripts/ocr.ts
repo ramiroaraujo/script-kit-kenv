@@ -9,15 +9,12 @@ const captureScreenshot = async () => {
     return tmpFile;
 };
 
-const recognizeText = async (filePath) => {
+const recognizeText = async (filePath, language) => {
     const { createWorker } = await npm("tesseract.js");
-    const worker = await createWorker({
-        logger: (m) => console.log(m),
-    });
+    const worker = await createWorker();
 
-    await worker.load();
-    await worker.loadLanguage("eng");
-    await worker.initialize("eng");
+    await worker.loadLanguage(language);
+    await worker.initialize(language);
 
     const { data } = await worker.recognize(filePath);
 
@@ -26,14 +23,26 @@ const recognizeText = async (filePath) => {
     return data.text;
 };
 
+const languages = [
+    { name: "Spanish", value: "spa" },
+    { name: "French", value: "fra" },
+    { name: "Portuguese", value: "por" },
+    { name: "English", value: "eng" },
+    { name: "Scripts", value: "osd" },
+    { name: "Math", value: "equ" },
+];
+
+// if ctrl is pressed, show a modal to select a language
+const selectedLanguage = flag.ctrl
+    ? await arg("Select a language:", languages)
+    : "eng";
+
 // Hide the Kit modal before capturing the screenshot
 await hide();
 
-//capture the screenshot
 const filePath = await captureScreenshot();
 
-// Recognize the text
-const text = await recognizeText(filePath);
+const text = await recognizeText(filePath, selectedLanguage);
 
 if (text) {
     await clipboard.writeText(text);
