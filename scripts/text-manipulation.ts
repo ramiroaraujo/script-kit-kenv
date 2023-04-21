@@ -114,7 +114,11 @@ let transformations = {
         const lines = text.split('\n');
         return lines.map(line => line.replace(pattern, replacement)).join('\n');
     },
-
+    removeRegexInAllLines: (text, regex) => {
+        const pattern = new RegExp(regex, 'g');
+        const lines = text.split('\n');
+        return lines.map(line => line.replace(pattern, '')).join('\n');
+    },
     generateNumberedList: (text) => {
         const lines = text.split('\n');
         return lines.map((line, index) => `${index + 1}. ${line}`).join('\n');
@@ -338,8 +342,18 @@ let options = [
         value: {
             key: "generateNumberedList",
         },
+    },
+    {
+        name: "Remove Regex In All Lines",
+        description: "Remove matches of the provided regex in all lines",
+        value: {
+            key: "removeRegexInAllLines",
+            parameter: {
+                name: "Regex",
+                description: "Enter a regex to remove from all lines",
+            },
+        },
     }
-
 ]
 
 const handleTransformation = async (text, transformation) => {
@@ -369,7 +383,9 @@ while (rerun) {
             flags,
             hint: operations.join(' > '),
         },
-        options.map(option => {
+        options
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(option => {
             return {
                 ...option,
                 preview: () => {
