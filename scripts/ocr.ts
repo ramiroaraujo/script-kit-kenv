@@ -28,8 +28,6 @@ const languages = [
     { name: "French", value: "fra" },
     { name: "Portuguese", value: "por" },
     { name: "English", value: "eng" },
-    { name: "Scripts", value: "osd" },
-    { name: "Math", value: "equ" },
 ];
 
 // if ctrl is pressed, show a modal to select a language
