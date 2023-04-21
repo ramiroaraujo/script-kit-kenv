@@ -5,31 +5,25 @@
 import "@johnlindquist/kit"
 
 let transformations = {
-    toUpperCase: text => text.toUpperCase(),
-    toLowerCase: text => text.toLowerCase(),
-    capitalize: text => text
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' '),
-    decodeUrl: text => decodeURIComponent(text),
-    snakeCase: text => text
-        .replace(/[\s-_]+(\w)/g, (_, p) => `_${p.toLowerCase()}`)
-        .replace(/^[A-Z]/, match => match.toLowerCase()),
-    camelCase: text => text
-        .replace(/[\s-_]+(\w)/g, (_, p) => p.toUpperCase())
-        .replace(/^[A-Z]/, match => match.toLowerCase()),
-    kebabCase: text => text
-        .replace(/[\s-_]+(\w)/g, (_, p) => `-${p.toLowerCase()}`)
-        .replace(/^[A-Z]/, match => match.toLowerCase()),
-    reverseCharacters: text => text.split('').reverse().join(''),
-    removeDuplicateLines: text => [...new Set(text.split('\n'))].join('\n'),
-    keepOnlyDuplicateLines: text => {
-        let lines = text.split('\n')
-        let duplicates = lines.filter((item, index) => lines.indexOf(item) !== index)
-        return [...new Set(duplicates)].join('\n')
+    upperCase: text => text.toUpperCase(),
+    lowerCase: text => text.toLowerCase(),
+    capitalize: text => text.split('\n').map(line => line.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')).join('\n'),
+    decodeUrl: text => text.split('\n').map(line => decodeURIComponent(line)).join('\n'),
+    snakeCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => `_${p.toLowerCase()}`).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
+    camelCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => p.toUpperCase()).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
+    kebabCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => `-${p.toLowerCase()}`).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
+    reverseCharacters: text => text.split('\n').map(line => line.split('').reverse().join('')).join('\n'),
+    removeDuplicateLines: text => {
+        let lines = text.split('\n');
+        return [...new Set(lines)].join('\n');
     },
-    removeEmptyLines: text => text.replace(/^\s*[\r\n]/gm, '').trim(),
-    removeAllNewLines: text => text.replace(/[\r\n]+/g, ''),
+    keepOnlyDuplicateLines: text => {
+        let lines = text.split('\n');
+        let duplicates = lines.filter((item, index) => lines.indexOf(item) !== index);
+        return [...new Set(duplicates)].join('\n');
+    },
+    removeEmptyLines: text => text.split('\n').filter(line => line.trim() !== '').join('\n'),
+    removeAllNewLines: text => text.split('\n').map(line => line.trim()).join(''),
     trimEachLine: text => text.split('\n').map(line => line.trim()).join('\n'),
     sortLinesAlphabetically: text => text.split('\n').sort().join('\n'),
     sortLinesNumerically: text => text.split('\n').sort((a, b) => a - b).join('\n'),
@@ -135,8 +129,27 @@ let options = [
         }
     },
     {
+        name: "Upper Case",
+        description: "Transform the entire text to upper case",
+        value: {
+            key: "upperCase",
+        },
+    },
+    {
+        name: "Lower Case",
+        description: "Transform the entire text to lower case",
+        value: {
+            key: "lowerCase",
+        },
+    },
+    {
         name: "snake_case", description: "Convert text to snake_case", value: {
             key: "snakeCase"
+        }
+    },
+    {
+        name: "Capitalize", description: "Convert text to Capital Case", value: {
+            key: "capitalize"
         }
     },
     {
