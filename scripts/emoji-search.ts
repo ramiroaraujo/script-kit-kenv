@@ -2,10 +2,37 @@
 // Description: Search and copy emoji to clipboard using SQLite database
 
 import "@johnlindquist/kit"
+import {execPath, mainScriptPath, scriptsDbPath, userDbPath} from "../../../../.kit/core/utils";
 
 const Database = await npm("better-sqlite3")
-const dbPath = kenvPath("kenvs", "ramiro", "db", "emoji-search-emojilib.db")
-const db = new Database(dbPath)
+const databaseFile = projectPath("db", "emoji-search-emojilib.db")
+
+const emojilibURL = "https://raw.githubusercontent.com/muan/emojilib/main/dist/emoji-en-US.json"
+
+const createDatabase = async () => {
+    const response = await get(emojilibURL)
+    const emojiData = response.data as Record<string, string[]>
+
+    //create db and table
+    const db = new Database(databaseFile)
+    db.exec(`CREATE TABLE IF NOT EXISTS emojis
+           (emoji TEXT PRIMARY KEY, name TEXT, keywords TEXT, used INTEGER DEFAULT 0)`)
+
+    //populate with data from emojilib
+    for (const [emojiChar, emojiInfo] of Object.entries(emojiData)) {
+        const description = emojiInfo[0]
+        const tags = emojiInfo.slice(1).join(', ')
+
+        db.prepare("INSERT OR REPLACE INTO emojis VALUES (?, ?, ?, 0)").run(emojiChar, description, tags)
+    }
+    db.close()
+};
+
+if (!await pathExists(databaseFile)) {
+    await createDatabase()
+}
+
+const db = new Database(databaseFile)
 
 const queryEmojis = async () => {
     const sql = "SELECT emoji, name, keywords FROM emojis ORDER BY used DESC"
