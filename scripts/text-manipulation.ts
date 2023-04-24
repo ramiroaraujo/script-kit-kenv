@@ -1,6 +1,5 @@
 // Name: Text Manipulation
 // Description: Transform clipboard text based on user-selected options
-// Shortcut: cmd option ctrl t
 
 import "@johnlindquist/kit"
 

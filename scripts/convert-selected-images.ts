@@ -56,7 +56,7 @@ for (const file of selectedFiles) {
     const outputBuffer = await convertHeic({
       buffer: content,
       format: formatMap[outputFormat],
-      quality: 0.4,
+      quality: 0.5,
     });
 
     await writeFile(uniqueOutputPath, outputBuffer);

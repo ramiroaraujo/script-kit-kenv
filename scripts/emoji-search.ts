@@ -2,7 +2,6 @@
 // Description: Search and copy emoji to clipboard using SQLite database
 
 import "@johnlindquist/kit"
-import {execPath, mainScriptPath, scriptsDbPath, userDbPath} from "../../../../.kit/core/utils";
 
 const Database = await npm("better-sqlite3")
 const databaseFile = projectPath("db", "emoji-search-emojilib.db")

@@ -120,8 +120,5 @@ switch (url.type) {
         finalUrl = await arg('Choose a Secret', [openSecrets, ...secrets]);
         break;}
 
-await exec(`open -na "Google Chrome" --args --profile-directory="Profile 1" "${finalUrl}"`)
-
-
 //open url in chrome in FF profile
-// await exec(`open -na "Google Chrome" --args --profile-directory="Profile 1" "${urlWithEnv}"`)
+await exec(`open -na "Google Chrome" --args --profile-directory="Profile 1" "${finalUrl}"`)

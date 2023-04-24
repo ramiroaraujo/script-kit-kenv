@@ -12,5 +12,5 @@ let url = text.match(/(https?:\/\/[^\s]+)/);
 if (url) {
     open(url[0]);
 } else {
-    notify("No URL in clipboard");
+    notify("No URL found in clipboard");
 }
