@@ -40,11 +40,12 @@ const selectedLanguage = flag.ctrl
 await hide();
 
 const filePath = await captureScreenshot();
+if (!await pathExists(filePath)) exit()
 
 const text = await recognizeText(filePath, selectedLanguage);
 
 if (text) {
-    await clipboard.writeText(text);
+    await clipboard.writeText(text.trim());
     await notify("Text recognized and copied to clipboard");
 } else {
     await notify("No text found in the screenshot");
