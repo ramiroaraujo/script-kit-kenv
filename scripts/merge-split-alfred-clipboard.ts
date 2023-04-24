@@ -4,13 +4,13 @@
 import "@johnlindquist/kit"
 
 const Database = await npm("better-sqlite3");
-const path = "/Users/ramiroaraujo/Library/Application Support/Alfred/Databases/clipboard.alfdb";
-if (!await pathExists(path)) {
+const databasePath = home('Library/Application Support/Alfred/Databases/clipboard.alfdb')
+if (!await pathExists(databasePath)) {
     notify("Alfred clipboard database not found" )
     exit()
 }
 
-const db = new Database(path);
+const db = new Database(databasePath);
 
 const queryClipboard = async (sql, params) => {
     const stmt = db.prepare(sql);
