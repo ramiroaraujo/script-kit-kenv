@@ -2,88 +2,6 @@
 
 import "@johnlindquist/kit"
 
-class Cache {
-    private cache
-
-    constructor(private structure: any, private env: string, private expires: number) {
-    }
-
-    private async init() {
-        this.cache = await db(`ff-gcp-${env}`, {content: {}})
-    }
-
-    async remember(type: string, invoke: Function) {
-        await this.init()
-        let expires = 1000 * 60 * 60 * 24 * 7; //cache for 7 days
-        let content = this.cache.data?.content[type];
-        if (content?.data && Date.now() - content?.expires < expires) {
-            return content.data
-        }
-        const data = await invoke()
-        this.cache.data['content'] = {[type]: {expires: Date.now() + expires, data}}
-        await this.cache.write()
-        return data
-    }
-
-    async clear() {
-        await this.init()
-        this.cache.data.content = {};
-        await this.cache.write();
-    }
-}
-
-
-const urls = [
-    {
-        name: 'Cloud Run', value: {
-            url: 'https://console.cloud.google.com/run?project=',
-            type: 'run'
-        }
-    },
-    {
-        name: 'Cloud Scheduler', value: {
-            url: 'https://console.cloud.google.com/cloudscheduler?project=',
-            type: 'scheduler'
-        }
-    },
-    {
-        name: 'Firestore', value: {
-            url: 'https://console.cloud.google.com/firestore?project=',
-            type: null
-        }
-    },
-    {
-        name: 'Logs', value: {
-            url: 'https://console.cloud.google.com/logs/query?project=',
-            type: 'logs'
-        }
-    },
-    {
-        name: 'Errors', value: {
-            url: 'https://console.cloud.google.com/errors?project=',
-            type: null
-        }
-    },
-    {
-        name: 'Storage', value: {
-            url: 'https://console.cloud.google.com/storage/browser?project=',
-            type: 'storage'
-        }
-    },
-    {
-        name: 'Secret Manager', value: {
-            url: 'https://console.cloud.google.com/security/secret-manager?project=',
-            type: 'secrets'
-        }
-    },
-    {
-        name: 'Invalidate Cache', value: {
-            type: 'invalidate'
-        }
-    }
-]
-
-//select from a list of options
 const env = await arg("Choose an environment", [
     "ff-app-dev",
     'ff-app-prod',
@@ -95,18 +13,79 @@ const env = await arg("Choose an environment", [
 ])
 
 //select from the urls list
-const url = await arg("Choose a url", urls)
+const url = await arg("Choose a url", [
+        {
+            name: 'Cloud Run', value: {
+                url: 'https://console.cloud.google.com/run?project=',
+                type: 'run'
+            }
+        },
+        {
+            name: 'Cloud Scheduler', value: {
+                url: 'https://console.cloud.google.com/cloudscheduler?project=',
+                type: 'scheduler'
+            }
+        },
+        {
+            name: 'Firestore', value: {
+                url: 'https://console.cloud.google.com/firestore?project=',
+                type: null
+            }
+        },
+        {
+            name: 'Logs', value: {
+                url: 'https://console.cloud.google.com/logs/query?project=',
+                type: 'logs'
+            }
+        },
+        {
+            name: 'Errors', value: {
+                url: 'https://console.cloud.google.com/errors?project=',
+                type: null
+            }
+        },
+        {
+            name: 'Storage', value: {
+                url: 'https://console.cloud.google.com/storage/browser?project=',
+                type: 'storage'
+            }
+        },
+        {
+            name: 'Secret Manager', value: {
+                url: 'https://console.cloud.google.com/security/secret-manager?project=',
+                type: 'secrets'
+            }
+        },
+        {
+            name: 'Invalidate Cache', value: {
+                type: 'invalidate'
+            }
+        }
+    ]
+)
+
+let cacheData = await db(`ff-gcp-${env}`,{content:{}})
+const cache = async (env, type, invoke:Function) => {
+    let expires = 1000 * 60 * 60 * 24 * 7; //cache for 7 days
+    if (cacheData.data.content[type]?.data && Date.now() - cacheData.data.content[type]?.expires < expires) {
+        return cacheData.data.content[type].data
+    }
+    const data = await invoke()
+    cacheData.data.content[type] = {
+        expires: Date.now() + expires,
+        data
+    }
+    await cacheData.write()
+    return data
+}
 
 //append env
 let finalUrl = `${url.url}${env}`
 
-//setup cache, expire in 7 days
-const cache = new Cache({}, env, 1000 * 60 * 60 * 24 * 7)
-
 const open = {name: 'Open', value: finalUrl}
 
 if (url.type === 'run') {
-    const data = await cache.remember('run', async () => {
+    const data = await cache(env, 'run', async () => {
         const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     })
@@ -118,7 +97,7 @@ if (url.type === 'run') {
 
     finalUrl = await arg("Choose a Cloud Run instance", [open, ...instances])
 } else if (url.type === 'scheduler') {
-    const data = await cache.remember('scheduler', async () => {
+    const data = await cache(env, 'scheduler', async () => {
         const cloudSchedulerInstances = await exec(`/opt/homebrew/bin/gcloud scheduler jobs list --project=${env} --format="json"`)
         return JSON.parse(cloudSchedulerInstances.stdout)
     })
@@ -135,7 +114,7 @@ if (url.type === 'run') {
         await notify('paste the name into the filters')
     }
 } else if (url.type === 'storage') {
-    const data = await cache.remember('storage', async () => {
+    const data = await cache(env, 'storage', async () => {
         const storageBuckets = await exec(
             `/opt/homebrew/bin/gcloud storage buckets list --project=${env} --format="json"`
         );
@@ -150,7 +129,7 @@ if (url.type === 'run') {
     finalUrl = await arg('Choose a Storage bucket', [open, ...buckets]);
 } else if (url.type === 'secrets') {
 
-    const data = await cache.remember('secrets', async () => {
+    const data = await cache(env, 'secrets', async () => {
         const secretsOutput = await exec(
             `/opt/homebrew/bin/gcloud secrets list --project=${env} --format="json"`
         );
@@ -165,7 +144,7 @@ if (url.type === 'run') {
 
     finalUrl = await arg('Choose a Secret', [openSecrets, ...secrets]);
 } else if (url.type === 'logs') {
-    const data = await cache.remember('logs', async () => {
+    const data = await cache(env, 'logs', async () => {
         const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     });
@@ -178,9 +157,9 @@ if (url.type === 'run') {
 
     finalUrl = await arg("Choose a Cloud Run instance", [open, ...instances])
 } else if (url.type === 'invalidate') {
-    await cache.clear()
-    await notify('Cache cleared')
-    exit()
+    cacheData.data.content = {};
+    await cacheData.write();
+    exit();
 }
 
 //open url in chrome in FF profile
