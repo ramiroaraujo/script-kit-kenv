@@ -9,4 +9,5 @@ const links = text.match(/https?:\/\/[^\s]+/g)
 //open all the links
 for (const link of links) {
     await open(link)
+    await wait(200)
 }
