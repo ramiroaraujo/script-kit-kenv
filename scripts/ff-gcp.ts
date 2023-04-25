@@ -2,21 +2,36 @@
 
 import "@johnlindquist/kit"
 
-let cacheData;
-const cache = async (env, type, invoke:Function) => {
-    cacheData = await db(`ff-gcp-${env}`,{})
-    let expires = 1000 * 60 * 60 * 24 * 7; //cache for 7 days
-    if (cacheData.data[type]?.data && Date.now() - cacheData.data[type]?.expires < expires) {
-        return cacheData.data[type].data
+class Cache {
+    private cache
+
+    constructor(private structure: any, private env: string, private expires: number) {
     }
-    const data = await invoke()
-    cacheData.data[type] = {
-        expires: Date.now() + expires,
-        data
+
+    private async init() {
+        this.cache = await db(`ff-gcp-${env}`, {content: {}})
     }
-    await cacheData.write()
-    return data
+
+    async remember(type: string, invoke: Function) {
+        await this.init()
+        let expires = 1000 * 60 * 60 * 24 * 7; //cache for 7 days
+        let content = this.cache.data?.content[type];
+        if (content?.data && Date.now() - content?.expires < expires) {
+            return content.data
+        }
+        const data = await invoke()
+        this.cache.data['content'] = {[type]: {expires: Date.now() + expires, data}}
+        await this.cache.write()
+        return data
+    }
+
+    async clear() {
+        await this.init()
+        this.cache.data.content = {};
+        await this.cache.write();
+    }
 }
+
 
 const urls = [
     {
@@ -85,10 +100,13 @@ const url = await arg("Choose a url", urls)
 //append env
 let finalUrl = `${url.url}${env}`
 
+//setup cache, expire in 7 days
+const cache = new Cache({}, env, 1000 * 60 * 60 * 24 * 7)
+
 const open = {name: 'Open', value: finalUrl}
 
 if (url.type === 'run') {
-    const data = await cache(env, 'run', async () => {
+    const data = await cache.remember('run', async () => {
         const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     })
@@ -100,7 +118,7 @@ if (url.type === 'run') {
 
     finalUrl = await arg("Choose a Cloud Run instance", [open, ...instances])
 } else if (url.type === 'scheduler') {
-    const data = await cache(env, 'scheduler', async () => {
+    const data = await cache.remember('scheduler', async () => {
         const cloudSchedulerInstances = await exec(`/opt/homebrew/bin/gcloud scheduler jobs list --project=${env} --format="json"`)
         return JSON.parse(cloudSchedulerInstances.stdout)
     })
@@ -117,7 +135,7 @@ if (url.type === 'run') {
         await notify('paste the name into the filters')
     }
 } else if (url.type === 'storage') {
-    const data = await cache(env, 'storage', async () => {
+    const data = await cache.remember('storage', async () => {
         const storageBuckets = await exec(
             `/opt/homebrew/bin/gcloud storage buckets list --project=${env} --format="json"`
         );
@@ -132,7 +150,7 @@ if (url.type === 'run') {
     finalUrl = await arg('Choose a Storage bucket', [open, ...buckets]);
 } else if (url.type === 'secrets') {
 
-    const data = await cache(env, 'secrets', async () => {
+    const data = await cache.remember('secrets', async () => {
         const secretsOutput = await exec(
             `/opt/homebrew/bin/gcloud secrets list --project=${env} --format="json"`
         );
@@ -147,7 +165,7 @@ if (url.type === 'run') {
 
     finalUrl = await arg('Choose a Secret', [openSecrets, ...secrets]);
 } else if (url.type === 'logs') {
-    const data = await cache(env, 'logs', async () => {
+    const data = await cache.remember('logs', async () => {
         const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     });
@@ -160,9 +178,9 @@ if (url.type === 'run') {
 
     finalUrl = await arg("Choose a Cloud Run instance", [open, ...instances])
 } else if (url.type === 'invalidate') {
-    debugger;
-    cacheData.data = {};
-    await cacheData.write();
+    await cache.clear()
+    await notify('Cache cleared')
+    exit()
 }
 
 //open url in chrome in FF profile
