@@ -87,7 +87,7 @@ const clearCache = async () => {
 //append env
 let finalUrl = `${url.url}${env}`
 
-const open = {name: 'Open list', value: finalUrl}
+const openList = {name: 'Open list', value: finalUrl}
 
 if (url.type === 'run') {
     const data = await cache('run', expires, async () => {
@@ -101,7 +101,7 @@ if (url.type === 'run') {
     }))
 
     finalUrl = await arg("Choose a Cloud Run instance", [
-        open, ...instances])
+        openList, ...instances])
 } else if (url.type === 'scheduler') {
     const data = await cache('scheduler', expires, async () => {
         const cloudSchedulerInstances = await exec(`/opt/homebrew/bin/gcloud scheduler jobs list --project=${env} --format="json"`)
@@ -115,7 +115,7 @@ if (url.type === 'run') {
     }))
 
     const result = await arg("Choose a Cloud Scheduler task", [
-        open, ...schedulerInstances])
+        openList, ...schedulerInstances])
     if (result !== 'Open') {
         await clipboard.writeText(result)
         await notify('paste the name into the filters')
@@ -126,7 +126,7 @@ if (url.type === 'run') {
         value: `https://console.cloud.google.com/firestore/databases/-default-/data/panel/${collection}?project=${env}`
     }))
     finalUrl = await arg("Choose a Firestore Collection", [
-        open, ...collections])
+        openList, ...collections])
 } else if (url.type === 'storage') {
     const data = await cache('storage', expires, async () => {
         const storageBuckets = await exec(
@@ -141,7 +141,7 @@ if (url.type === 'run') {
     }));
 
     finalUrl = await arg('Choose a Storage bucket', [
-        open, ...buckets]);
+        openList, ...buckets]);
 } else if (url.type === 'secrets') {
 
     const data = await cache('secrets', expires, async () => {
@@ -157,7 +157,7 @@ if (url.type === 'run') {
     }));
 
     finalUrl = await arg('Choose a Secret', [
-        open, ...secrets]);
+        openList, ...secrets]);
 } else if (url.type === 'logs') {
     const data = await cache('logs', expires, async () => {
         const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
