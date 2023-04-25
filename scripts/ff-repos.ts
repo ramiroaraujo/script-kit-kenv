@@ -13,32 +13,45 @@ const headers = {
     Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
     Accept: 'application/vnd.github.v3+json'
 };
-let cache = await db({repos: [], lastUpdated: 0})
+
+// ----------------- cache helper ----------------
+let cacheData = await db(`ff-repos`, {content: {}})
+const cache = async (type, expires, invoke: Function) => {
+    if (cacheData.data.content[type]?.data && Date.now() - cacheData.data.content[type]?.expires < expires) {
+        return cacheData.data.content[type].data
+    }
+    const data = await invoke()
+    cacheData.data.content[type] = {expires: Date.now() + expires, data}
+    await cacheData.write()
+    return data
+}
+const clearCache = async () => {
+    cacheData.data.content = {};
+    await cacheData.write();
+}
+// ----------------- cache helper ----------------
 
 const getRepos = async () => {
-    if (cache.repos.length && Date.now() - cache.lastUpdated < 1000 * 60 * 60 * 24) {
-        return cache.repos
-    }
-    const response = await fetch(`https://api.github.com/orgs/FactoryFixInc/repos?per_page=${perPage}`, {headers});
-    const linkHeader = response.headers.get('link');
-    let results = []
-    if (linkHeader) {
-        const lastPageNum = parseInt(linkHeader.match(/&page=(\d+)>; rel="last"/)[1]);
 
-        // fetch all pages in parallel
-        const promises = [];
-        for (let pageNum = 2; pageNum <= lastPageNum; pageNum++) {
-            promises.push(fetch(`https://api.github.com/orgs/FactoryFixInc/repos?per_page=${perPage}&page=${pageNum}`, {headers}).then(res => res.json()));
+    const repos = await cache('repos', 1000 * 60 * 60 * 24 * 7, async () => {
+        const response = await fetch(`https://api.github.com/orgs/FactoryFixInc/repos?per_page=${perPage}`, {headers});
+        const linkHeader = response.headers.get('link');
+        let results = []
+        if (linkHeader) {
+            const lastPageNum = parseInt(linkHeader.match(/&page=(\d+)>; rel="last"/)[1]);
+
+            // fetch all pages in parallel
+            const promises = [];
+            for (let pageNum = 2; pageNum <= lastPageNum; pageNum++) {
+                promises.push(fetch(`https://api.github.com/orgs/FactoryFixInc/repos?per_page=${perPage}&page=${pageNum}`, {headers}).then(res => res.json()));
+            }
+            results = await Promise.all(promises);
         }
-        results = await Promise.all(promises);
-    }
 
-// combine all results
-    const repos = [await response.json(), ...results].flat();
-    cache.repos = repos;
-    cache.lastUpdated = Date.now();
-    await cache.write()
-    debugger;
+        // combine all results
+        return [await response.json(), ...results].flat();
+    })
+
     return repos;
 }
 
@@ -61,9 +74,7 @@ do {
     ]);
 
     if (repo === "invalidate_cache") {
-        cache.repos = [];
-        cache.lastUpdated = 0;
-        await cache.write();
+        await clearCache();
     }
 } while (repo === "invalidate_cache");
 
