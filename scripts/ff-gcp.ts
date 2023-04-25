@@ -66,63 +66,69 @@ const url = await arg("Choose a url", [
     ]
 )
 
-let cacheData = await db(`ff-gcp-${env}`,{content:{}})
-const cache = async (env, type, invoke:Function) => {
-    let expires = 1000 * 60 * 60 * 24 * 7; //cache for 7 days
+// ----------------- cache helper ----------------
+let cacheData = await db(`ff-gcp-${env}`, {content: {}})
+let expires = 1000 * 60 * 60 * 24 * 7 // 7 days
+const cache = async (type, expires, invoke: Function) => {
     if (cacheData.data.content[type]?.data && Date.now() - cacheData.data.content[type]?.expires < expires) {
         return cacheData.data.content[type].data
     }
     const data = await invoke()
-    cacheData.data.content[type] = {
-        expires: Date.now() + expires,
-        data
-    }
+    cacheData.data.content[type] = {expires: Date.now() + expires, data}
     await cacheData.write()
     return data
 }
+const clearCache = async () => {
+    cacheData.data.content = {};
+    await cacheData.write();
+}
+// ----------------- cache helper ----------------
 
 //append env
 let finalUrl = `${url.url}${env}`
 
-const open = {name: 'Open', value: finalUrl}
+const open = {name: 'Open list', value: finalUrl}
 
 if (url.type === 'run') {
-    const data = await cache(env, 'run', async () => {
+    const data = await cache('run', expires, async () => {
         const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     })
 
     const instances = data.map(instance => ({
-        name: instance.metadata.name,
+        name: `Open service ${instance.metadata.name}`,
         value: `https://console.cloud.google.com/run/detail/${instance.metadata.labels['cloud.googleapis.com/location']}/${instance.metadata.name}/metrics?project=${env}`,
     }))
 
-    finalUrl = await arg("Choose a Cloud Run instance", [open, ...instances])
+    finalUrl = await arg("Choose a Cloud Run instance", [
+        open, ...instances])
 } else if (url.type === 'scheduler') {
-    const data = await cache(env, 'scheduler', async () => {
+    const data = await cache('scheduler', expires, async () => {
         const cloudSchedulerInstances = await exec(`/opt/homebrew/bin/gcloud scheduler jobs list --project=${env} --format="json"`)
         return JSON.parse(cloudSchedulerInstances.stdout)
     })
 
     const schedulerInstances = data.map(job => ({
-        name: job.name.split('/').pop(),
+        name: `Copy ${job.name.split('/').pop()}`,
         description: job.description,
         value: job.name.split('/').pop(),
     }))
 
-    const result = await arg("Choose a Cloud Scheduler task", [open, ...schedulerInstances])
+    const result = await arg("Choose a Cloud Scheduler task", [
+        open, ...schedulerInstances])
     if (result !== 'Open') {
         await clipboard.writeText(result)
         await notify('paste the name into the filters')
     }
 } else if (url.type === 'firestore') {
     const collections = url.collections.map(collection => ({
-        name: collection,
+        name: `Open collection ${collection}`,
         value: `https://console.cloud.google.com/firestore/databases/-default-/data/panel/${collection}?project=${env}`
     }))
-   finalUrl = await arg("Choose a Firestore Collection", [open, ...collections])
+    finalUrl = await arg("Choose a Firestore Collection", [
+        open, ...collections])
 } else if (url.type === 'storage') {
-    const data = await cache(env, 'storage', async () => {
+    const data = await cache('storage', expires, async () => {
         const storageBuckets = await exec(
             `/opt/homebrew/bin/gcloud storage buckets list --project=${env} --format="json"`
         );
@@ -130,14 +136,15 @@ if (url.type === 'run') {
     })
 
     const buckets = data.map(bucket => ({
-        name: bucket.name,
+        name: `Open bucket ${bucket.name}`,
         value: `https://console.cloud.google.com/storage/browser/${bucket.name}?project=${env}`,
     }));
 
-    finalUrl = await arg('Choose a Storage bucket', [open, ...buckets]);
+    finalUrl = await arg('Choose a Storage bucket', [
+        open, ...buckets]);
 } else if (url.type === 'secrets') {
 
-    const data = await cache(env, 'secrets', async () => {
+    const data = await cache('secrets', expires, async () => {
         const secretsOutput = await exec(
             `/opt/homebrew/bin/gcloud secrets list --project=${env} --format="json"`
         );
@@ -145,28 +152,27 @@ if (url.type === 'run') {
     })
 
     const secrets = data.map(secret => ({
-        name: secret.name.split('/').pop(),
+        name: `Open secret ${secret.name.split('/').pop()}`,
         value: `https://console.cloud.google.com/security/secret-manager/secret/${secret.name.split('/').pop()}?project=${env}`,
     }));
-    const openSecrets = {name: 'Open', value: finalUrl};
 
-    finalUrl = await arg('Choose a Secret', [openSecrets, ...secrets]);
+    finalUrl = await arg('Choose a Secret', [
+        open, ...secrets]);
 } else if (url.type === 'logs') {
-    const data = await cache(env, 'logs', async () => {
+    const data = await cache('logs', expires, async () => {
         const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     });
 
     const instances = data.map(instance => ({
-        name: instance.metadata.name,
+        name: `Filter by service name ${instance.metadata.name}`,
         value: `https://console.cloud.google.com/logs/query;query=resource.labels.service_name%3D%22${instance.metadata.name}%22;summaryFields=:false:32:beginning?project=${env}`,
     }))
     const open = {name: 'Open', value: finalUrl}
 
     finalUrl = await arg("Choose a Cloud Run instance", [open, ...instances])
 } else if (url.type === 'invalidate') {
-    cacheData.data.content = {};
-    await cacheData.write();
+    await clearCache()
     exit();
 }
 
