@@ -384,7 +384,6 @@ while (rerun) {
             hint: operations.join(' > '),
         },
         options
-            .sort((a, b) => a.name.localeCompare(b.name))
             .map(option => {
             return {
                 ...option,
