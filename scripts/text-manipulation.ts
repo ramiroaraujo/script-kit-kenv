@@ -365,8 +365,8 @@ const handleTransformation = async (text, transformation) => {
 };
 
 let flags = {
-    rerun: {
-        name: "Rerun",
+    stop: {
+        name: "Stop",
         shortcut: "cmd+enter",
     },
 }
@@ -379,7 +379,7 @@ let rerun = true;
 while (rerun) {
     let transformation = await arg(
         {
-            placeholder: "Choose a text transformation (Cmd + enter to rerun)",
+            placeholder: "Choose a text transformation (Cmd + enter to finish)",
             flags,
             hint: operations.join(' > '),
         },
@@ -399,7 +399,7 @@ while (rerun) {
             }
         })
     )
-    rerun = flag?.rerun as boolean;
+    rerun = !flag?.stop as boolean;
 
     clipboardText = await handleTransformation(clipboardText, transformation);
     operations.push(transformation.key);
