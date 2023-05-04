@@ -357,6 +357,9 @@ let options = [
     {
         name: "No Operation",
         description: "Do nothing to the text, if you accidentally hit Cmd + enter and need no more transformations",
+        value: {
+            key: "noop",
+        }
     }
 ]
 
