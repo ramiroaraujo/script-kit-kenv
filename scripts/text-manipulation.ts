@@ -126,7 +126,13 @@ let transformations = {
 }
 
 let options = [
-    // Existing options here
+    {
+        name: "No Operation",
+        description: "Do nothing to the text, if you accidentally hit Cmd + enter and need no more transformations",
+        value: {
+            key: "noop",
+        }
+    },
     {
         name: "Decode URL", description: "Decode a URL-encoded text", value: {
             key: "decodeUrl"
