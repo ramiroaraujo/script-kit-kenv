@@ -7,7 +7,6 @@ let transformations = {
     upperCase: text => text.toUpperCase(),
     lowerCase: text => text.toLowerCase(),
     capitalize: text => text.split('\n').map(line => line.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')).join('\n'),
-    decodeUrl: text => text.split('\n').map(line => decodeURIComponent(line)).join('\n'),
     snakeCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => `_${p.toLowerCase()}`).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
     camelCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => p.toUpperCase()).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
     kebabCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => `-${p.toLowerCase()}`).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
@@ -131,11 +130,6 @@ let options = [
         description: "Do nothing to the text, if you accidentally hit Cmd + enter and need no more transformations",
         value: {
             key: "noop",
-        }
-    },
-    {
-        name: "Decode URL", description: "Decode a URL-encoded text", value: {
-            key: "decodeUrl"
         }
     },
     {
@@ -359,13 +353,6 @@ let options = [
                 description: "Enter a regex to remove from all lines",
             },
         },
-    },
-    {
-        name: "No Operation",
-        description: "Do nothing to the text, if you accidentally hit Cmd + enter and need no more transformations",
-        value: {
-            key: "noop",
-        }
     }
 ]
 
