@@ -60,6 +60,12 @@ const url = await arg("Choose a url", [
             }
         },
         {
+            name: 'IAM service accounts', value: {
+                url: 'https://console.cloud.google.com/iam-admin/serviceaccounts?project=',
+                type: null
+            }
+        },
+        {
             name: 'Invalidate Cache', value: {
                 type: 'invalidate'
             }
@@ -140,7 +146,7 @@ if (url.type === 'run') {
         placeholder: "Choose a Firestore Collection (Cmd + enter to open the query)",
         flags,
     }, [
-        {name: 'Open', value: { url: finalUrl, query: url.query }}, ...collections])
+        {name: 'Open', value: {url: finalUrl, query: url.query}}, ...collections])
 
     if (collection.url) {
         if (!flag?.query) {
