@@ -71,9 +71,19 @@ let transformations = {
     },
     wrapEachLine: (text, wrapper) => {
         const lines = text.split('\n');
+        const eolChars = [',', '.', ';'];
 
         return lines
-            .map(line => `${wrapper}${line}${wrapper}`)
+            .map(line => {
+                const lastChar = line.charAt(line.length - 1);
+                const hasEOL = eolChars.includes(lastChar);
+
+                if (hasEOL) {
+                    return `${wrapper}${line.slice(0, -1)}${wrapper}${lastChar}`;
+                } else {
+                    return `${wrapper}${line}${wrapper}`;
+                }
+            })
             .join('\n');
     },
     captureEachLine: (text, regex) => {
