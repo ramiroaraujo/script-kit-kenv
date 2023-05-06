@@ -41,19 +41,28 @@ let transformations = {
     removeWrapping: text => {
         const lines = text.split('\n');
         const matchingPairs = [['(', ')'], ['[', ']'], ['{', '}'], ['<', '>'], ['"', '"'], ["'", "'"]];
+        const eolChars = [',', '.', ';'];
+
         return lines
             .map(line => {
                 const firstChar = line.charAt(0);
-                const lastChar = line.charAt(line.length - 1);
+                let lastChar = line.charAt(line.length - 1);
+                let adjustIndex = 0;
+
+                // Check if there is an EOL character
+                if (eolChars.includes(lastChar)) {
+                    lastChar = line.charAt(line.length - 2);
+                    adjustIndex = 1;
+                }
 
                 for (const [open, close] of matchingPairs) {
                     if (firstChar === open && lastChar === close) {
-                        return line.slice(1, -1);
+                        return line.slice(1, -1 - adjustIndex) + (adjustIndex ? line.slice(-1) : "");
                     }
                 }
 
                 if (firstChar === lastChar) {
-                    return line.slice(1, -1);
+                    return line.slice(1, -1 - adjustIndex) + (adjustIndex ? line.slice(-1) : "");
                 }
 
                 return line;
