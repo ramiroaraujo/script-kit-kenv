@@ -83,7 +83,7 @@ const operation = await arg("Select an operation", [
     {name: "Open", value: "open"},
     {name: "Open Pull Requests", value: "pull"},
     {name: "List Open Pull Requests", value: "list_pulls"},
-    {name: "Clone", value: "clone"},
+    {name: "Copy Clone URI", value: "clone"},
     {name: "Copy Repo Name", value: "copy_name"},
 ]);
 
