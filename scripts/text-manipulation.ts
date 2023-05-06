@@ -394,6 +394,7 @@ let flags = {
 let clipboardText = await clipboard.readText()
 let operations: string[] = []
 let rerun = true;
+const cache = await db(`text-manipulation`, {usage: {}})
 
 while (rerun) {
     let transformation = await arg(
@@ -403,6 +404,14 @@ while (rerun) {
             hint: operations.join(' > '),
         },
         options
+            .sort((a, b) => {
+                if (a.value.key === "noop") return -1;
+                if (b.value.key === "noop") return 1;
+
+                const aCount = cache.usage[a.value.key] || 0;
+                const bCount = cache.usage[b.value.key] || 0;
+                return bCount - aCount;
+            })
             .map(option => {
             return {
                 ...option,
@@ -418,6 +427,12 @@ while (rerun) {
         })
     )
     rerun = !flag?.stop as boolean;
+
+    //store usage for sorting
+    if (transformation.key !== 'noop') {
+        cache.usage[transformation.key] = (cache.usage[transformation.key] || 0) + 1
+        await cache.write()
+    }
 
     clipboardText = await handleTransformation(clipboardText, transformation);
     operations.push(transformation.key);
