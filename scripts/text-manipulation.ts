@@ -3,24 +3,6 @@
 
 import "@johnlindquist/kit"
 
-// ----------------- cache helper ----------------
-let cacheData = await db(`ff-gcp-${env}`, {content: {}})
-let expires = 1000 * 60 * 60 * 24 * 7 // 7 days
-const cache = async (type, expires, invoke: Function) => {
-    if (cacheData.data.content[type]?.data && Date.now() - cacheData.data.content[type]?.expires < expires) {
-        return cacheData.data.content[type].data
-    }
-    const data = await invoke()
-    cacheData.data.content[type] = {expires: Date.now() + expires, data}
-    await cacheData.write()
-    return data
-}
-const clearCache = async () => {
-    cacheData.data.content = {};
-    await cacheData.write();
-}
-// ----------------- cache helper ----------------
-
 let transformations = {
     upperCase: text => text.toUpperCase(),
     lowerCase: text => text.toLowerCase(),
