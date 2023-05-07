@@ -291,7 +291,7 @@ let options = [
             parameter: {
                 name: "Pattern",
                 description: "Enter a regex pattern to capture",
-                defaultValue: "\\d+",
+                defaultValue: "(.+)|$1",
             },
         },
     },
@@ -315,7 +315,7 @@ let options = [
             parameter: {
                 name: "Regex",
                 description: "Enter a regex to match lines to keep",
-                defaultValue: '',
+                defaultValue: '.+',
             },
         },
     },
@@ -351,7 +351,7 @@ let options = [
             parameter: {
                 name: "Regex and Replacement",
                 description: "Enter regex and replacement text separated by a '|'",
-                defaultValue: '',
+                defaultValue: '(.+)|$1',
             },
         },
     },
