@@ -386,7 +386,7 @@ const handleTransformation = async (text, transformation) => {
 let clipboardText = await clipboard.readText()
 let operations: string[] = []
 let rerun = true;
-const cache = await db(`text-manipulation`, {usage: {}})
+const cache = await db(`text-manipulation`, { usage: {}, timestamps: {} });
 
 while (rerun) {
     let transformation = await arg(
@@ -399,9 +399,19 @@ while (rerun) {
                 if (a.value.key === "finish") return -1;
                 if (b.value.key === "finish") return 1;
 
+                const now = Date.now();
+                const timeDecay = 3600 * 24 * 7 * 1000; // Time decay in milliseconds (e.g., 1 week)
+
                 const aCount = cache.usage[a.value.key] || 0;
                 const bCount = cache.usage[b.value.key] || 0;
-                return bCount - aCount;
+
+                const aTimestamp = cache.timestamps[a.value.key] || now;
+                const bTimestamp = cache.timestamps[b.value.key] || now;
+
+                const aDecayedCount = aCount * Math.exp(-(now - aTimestamp) / timeDecay);
+                const bDecayedCount = bCount * Math.exp(-(now - bTimestamp) / timeDecay);
+
+                return bDecayedCount - aDecayedCount;
             })
             .map(option => {
             return {
@@ -421,8 +431,9 @@ while (rerun) {
 
     //store usage for sorting
     if (transformation.key !== 'finish') {
-        cache.usage[transformation.key] = (cache.usage[transformation.key] || 0) + 1
-        await cache.write()
+        cache.usage[transformation.key] = (cache.usage[transformation.key] || 0) + 1;
+        cache.timestamps[transformation.key] = Date.now();
+        await cache.write();
         operations.push(transformation.key);
     }
 
