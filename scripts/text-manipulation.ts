@@ -140,15 +140,15 @@ let transformations = {
         const lines = text.split('\n');
         return lines.map((line, index) => `${index + 1}. ${line}`).join('\n');
     },
-    noop: text => text,
+    finish: text => text,
 }
 
 let options = [
     {
-        name: "No Operation",
-        description: "Do nothing to the text, if you accidentally hit Cmd + enter and need no more transformations",
+        name: "Perform Transformations",
+        description: "Perform transformations on the text and copy to clipboard",
         value: {
-            key: "noop",
+            key: "finish",
         }
     },
     {
@@ -383,14 +383,6 @@ const handleTransformation = async (text, transformation) => {
     return transformations[key](text, paramValue);
 };
 
-let flags = {
-    stop: {
-        name: "Stop",
-        shortcut: "cmd+enter",
-    },
-}
-
-
 let clipboardText = await clipboard.readText()
 let operations: string[] = []
 let rerun = true;
@@ -399,14 +391,13 @@ const cache = await db(`text-manipulation`, {usage: {}})
 while (rerun) {
     let transformation = await arg(
         {
-            placeholder: "Choose a text transformation (Cmd + enter to finish)",
-            flags,
+            placeholder: "Choose a text transformation",
             hint: operations.join(' > '),
         },
         options
             .sort((a, b) => {
-                if (a.value.key === "noop") return -1;
-                if (b.value.key === "noop") return 1;
+                if (a.value.key === "finish") return -1;
+                if (b.value.key === "finish") return 1;
 
                 const aCount = cache.usage[a.value.key] || 0;
                 const bCount = cache.usage[b.value.key] || 0;
@@ -426,16 +417,16 @@ while (rerun) {
             }
         })
     )
-    rerun = !flag?.stop as boolean;
+    rerun = transformation.key !== 'finish';
 
     //store usage for sorting
-    if (transformation.key !== 'noop') {
+    if (transformation.key !== 'finish') {
         cache.usage[transformation.key] = (cache.usage[transformation.key] || 0) + 1
         await cache.write()
+        operations.push(transformation.key);
     }
 
     clipboardText = await handleTransformation(clipboardText, transformation);
-    operations.push(transformation.key);
 }
 
 await clipboard.writeText(clipboardText)
