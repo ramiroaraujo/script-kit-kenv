@@ -395,8 +395,8 @@ const handleTransformation = async (text, transformation) => {
     };
 };
 
-const runAllTransformations = () => {
-    return JSON.parse(cache.last).reduce((prev, curr) => {
+const runAllTransformations = (all) => {
+    return all.reduce((prev, curr) => {
         return transformations[curr.name].apply(null, [prev, ...curr.params])
     }, clipboardText)
 }
@@ -404,6 +404,7 @@ const runAllTransformations = () => {
 let clipboardText = await clipboard.readText()
 let operations: { name: string, params: any[] }[] = []
 const cache = await db(`text-manipulation`, {usage: {}, timestamps: {}, last: null});
+let lastTransformations = JSON.parse(cache.last)
 
 loop: while (true) {
     let transformation = await arg(
@@ -437,7 +438,7 @@ loop: while (true) {
                     ...option,
                     preview: () => {
                         try {
-                            if (option.value.key === 'last') return md(`<pre>${runAllTransformations()}</pre>`)
+                            if (option.value.key === 'last') return md(`<pre>${runAllTransformations(lastTransformations)}</pre>`)
                             if (option.value.parameter) throw '';
                             return md(`<pre>${transformations[option.value.key](clipboardText)}</pre>`)
                         } catch (e) {
@@ -452,7 +453,8 @@ loop: while (true) {
         case 'finish':
             break loop
         case 'last':
-            clipboardText = runAllTransformations();
+            clipboardText = runAllTransformations(lastTransformations);
+            operations = [...lastTransformations]
             break;
         default:
             const result = await handleTransformation(clipboardText, transformation);
