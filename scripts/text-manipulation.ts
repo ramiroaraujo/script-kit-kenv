@@ -145,6 +145,13 @@ let transformations = {
 
 let options = [
     {
+        name: "Last Transformations",
+        description: "Perform the last transformations on the text and prompt for next",
+        value: {
+            key: "last",
+        }
+    },
+    {
         name: "Perform Transformations",
         description: "Perform transformations on the text and copy to clipboard",
         value: {
@@ -381,24 +388,35 @@ const handleTransformation = async (text, transformation) => {
     let paramValue = parameter ? await arg({
         input: parameter.defaultValue,
     }, (input) => md(`<pre>${transformations[key](text, input)}</pre>`)) : null;
-    return transformations[key](text, paramValue);
+    return {
+        text: transformations[key](text, paramValue),
+        name: key,
+        paramValue
+    };
 };
 
-let clipboardText = await clipboard.readText()
-let operations: string[] = []
-let rerun = true;
-const cache = await db(`text-manipulation`, { usage: {}, timestamps: {} });
+const runAllTransformations = () => {
+    return JSON.parse(cache.last).reduce((prev, curr) => {
+        return transformations[curr.name].apply(null, [prev, ...curr.params])
+    }, clipboardText)
+}
 
-while (rerun) {
+let clipboardText = await clipboard.readText()
+let operations: { name: string, params: any[] }[] = []
+const cache = await db(`text-manipulation`, {usage: {}, timestamps: {}, last: null});
+
+loop: while (true) {
     let transformation = await arg(
         {
             placeholder: "Choose a text transformation",
-            hint: operations.join(' > '),
+            hint: operations.map(o => o.name).join(' > '),
         },
         options
             .sort((a, b) => {
-                if (a.value.key === "finish") return -1;
-                if (b.value.key === "finish") return 1;
+                if (a.value.key === 'finish') return -1;
+                if (b.value.key === 'finish') return 1;
+                if (a.value.key === 'last') return -1;
+                if (b.value.key === 'last') return 1;
 
                 const now = Date.now();
                 const timeDecay = 3600 * 24 * 7 * 1000; // Time decay in milliseconds (e.g., 1 week)
@@ -415,30 +433,40 @@ while (rerun) {
                 return bDecayedCount - aDecayedCount;
             })
             .map(option => {
-            return {
-                ...option,
-                preview: () => {
-                    try {
-                        if (option.value.parameter) throw '';
-                        return md(`<pre>${transformations[option.value.key](clipboardText)}</pre>`)
-                    } catch (e) {
-                        return '...'
-                    }
-                },
-            }
-        })
+                return {
+                    ...option,
+                    preview: () => {
+                        try {
+                            if (option.value.key === 'last') return md(`<pre>${runAllTransformations()}</pre>`)
+                            if (option.value.parameter) throw '';
+                            return md(`<pre>${transformations[option.value.key](clipboardText)}</pre>`)
+                        } catch (e) {
+                            return '...'
+                        }
+                    },
+                }
+            })
     )
-    rerun = transformation.key !== 'finish';
 
-    //store usage for sorting
-    if (transformation.key !== 'finish') {
-        cache.usage[transformation.key] = (cache.usage[transformation.key] || 0) + 1;
-        cache.timestamps[transformation.key] = Date.now();
-        await cache.write();
-        operations.push(transformation.key);
+    switch (transformation.key) {
+        case 'finish':
+            break loop
+        case 'last':
+            clipboardText = runAllTransformations();
+            break;
+        default:
+            const result = await handleTransformation(clipboardText, transformation);
+            clipboardText = result.text;
+
+            //save operations
+            operations.push({name: result.name, params: [result.paramValue]});
+
+            //store usage for sorting, and update last operations
+            cache.usage[transformation.key] = (cache.usage[transformation.key] || 0) + 1;
+            cache.timestamps[transformation.key] = Date.now();
+            cache.last = JSON.stringify(operations);
+            await cache.write();
     }
-
-    clipboardText = await handleTransformation(clipboardText, transformation);
 }
 
 await clipboard.writeText(clipboardText)
