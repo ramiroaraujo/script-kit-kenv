@@ -3,7 +3,19 @@ import "@johnlindquist/kit";
 
 const renamings = {
     prepend: (file, prefix) => `${prefix}${file}`,
-    append: (file, suffix) => `${file}${suffix}`,
+    append: (file, suffix) => {
+        const fileParts = file.split('.');
+        const extension = fileParts.pop();
+        const fileName = fileParts.join('.');
+        return `${fileName}${suffix}.${extension}`;
+    },
+    replaceWithRegex: (file, [search, replace]) => {
+        const fileParts = file.split('.');
+        const extension = fileParts.pop();
+        const fileName = fileParts.join('.');
+        return fileName.replace(new RegExp(search, 'g'), replace) + '.' + extension;
+    },
+    generateNumberedList: (file, index) => `${index}-${file}`
 };
 
 const options = [
@@ -19,7 +31,16 @@ const options = [
         name: 'Append',
         value: { key: 'append', parameter: { defaultValue: '_Suffix' } },
     },
+    {
+        name: 'Replace with regex',
+        value: { key: 'replaceWithRegex', parameter: { defaultValue: 'search,replace' } },
+    },
+    {
+        name: 'Generate Numbered List',
+        value: { key: 'generateNumberedList' },
+    },
 ];
+
 
 let files = (await getSelectedFile()).split('\n');
 let basePath = files[0].split('/').slice(0, -1).join('/');
