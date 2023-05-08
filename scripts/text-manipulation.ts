@@ -24,7 +24,7 @@ let transformations = {
     removeAllNewLines: text => text.split('\n').map(line => line.trim()).join(''),
     trimEachLine: text => text.split('\n').map(line => line.trim()).join('\n'),
     sortLinesAlphabetically: text => text.split('\n').sort().join('\n'),
-    sortLinesNumerically: text => text.split('\n').sort((a, b) => a - b).join('\n'),
+    sortLinesNumerically: text => text.split('\n').sort((a, b) => parseInt(a) - parseInt(b)).join('\n'),
     reverseLines: text => text.split('\n').reverse().join('\n'),
     shuffleLines: text => {
         let lines = text.split('\n')
@@ -356,13 +356,6 @@ let options = [
         },
     },
     {
-        name: "Generate Numbered List",
-        description: "Prepend numbers to each line",
-        value: {
-            key: "generateNumberedList",
-        },
-    },
-    {
         name: "Remove Regex In All Lines",
         description: "Remove matches of the provided regex in all lines",
         value: {
@@ -370,7 +363,15 @@ let options = [
             parameter: {
                 name: "Regex",
                 description: "Enter a regex to remove from all lines",
+                defaultValue: '',
             },
+        },
+    },
+    {
+        name: "Generate Numbered List",
+        description: "Prepend numbers to each line",
+        value: {
+            key: "generateNumberedList",
         },
     }
 ]
