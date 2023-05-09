@@ -480,12 +480,12 @@ loop: while (true) {
             //store usage for sorting
             cache.usage[transformation.key] = (cache.usage[transformation.key] || 0) + 1;
             cache.timestamps[transformation.key] = Date.now();
-
-            //store last transformations
-            cache.last = JSON.stringify(operations);
-            await cache.write();
     }
 }
+
+//store last transformations
+cache.last = JSON.stringify(operations);
+await cache.write();
 
 await clipboard.writeText(clipboardText)
 
