@@ -414,7 +414,9 @@ loop: while (true) {
         },
         options
             .map(option=> {
+                //last transformation if not available
                 if (option.value.key === 'last' && !lastTransformations) return null;
+                //hide finish if no operations yet
                 if (option.value.key === 'finish' && !operations.length) return null;
                 return option;
             })
@@ -463,6 +465,9 @@ loop: while (true) {
         case 'last':
             clipboardText = runAllTransformations(lastTransformations);
             operations = [...lastTransformations]
+
+            //remove last transformations from local memory
+            //it is still persisted and will be updated if new transformations are applied
             lastTransformations = null;
             break;
         default:
@@ -472,9 +477,11 @@ loop: while (true) {
             //save operations
             operations.push({name: result.name, params: [result.paramValue]});
 
-            //store usage for sorting, and update last operations
+            //store usage for sorting
             cache.usage[transformation.key] = (cache.usage[transformation.key] || 0) + 1;
             cache.timestamps[transformation.key] = Date.now();
+
+            //store last transformations
             cache.last = JSON.stringify(operations);
             await cache.write();
     }
