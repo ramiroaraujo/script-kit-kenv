@@ -415,7 +415,7 @@ loop: while (true) {
         options
             .map(option=> {
                 //last transformation if not available
-                if (option.value.key === 'last' && !lastTransformations) return null;
+                if (option.value.key === 'last' && (!lastTransformations || operations.length)) return null;
                 //hide finish if no operations yet
                 if (option.value.key === 'finish' && !operations.length) return null;
                 return option;
