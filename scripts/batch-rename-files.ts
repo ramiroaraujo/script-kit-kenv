@@ -1,4 +1,6 @@
-// Batch File Rename
+// Name: Batch Rename Files
+// Description: Rename all selected files in a batch
+
 import "@johnlindquist/kit";
 
 const renamings = {
