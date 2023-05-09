@@ -9,6 +9,7 @@ let transformations = {
     capitalize: text => text.split('\n').map(line => line.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')).join('\n'),
     snakeCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => `_${p.toLowerCase()}`).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
     camelCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => p.toUpperCase()).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
+    reverseCamelCase: text => text.split('\n').map(line => line.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()).trim()).join('\n'),
     kebabCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => `-${p.toLowerCase()}`).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
     reverseCharacters: text => text.split('\n').map(line => line.split('').reverse().join('')).join('\n'),
     removeDuplicateLines: text => {
@@ -161,7 +162,14 @@ let options = [
     {
         name: "Save Transformations",
         description: "Save the current transformations under a custom name",
-        value: { key: "save" },
+        value: {key: "save"},
+    },
+    {
+        name: "List Saved Transformations",
+        description: "List and execute saved transformation combos",
+        value: {
+            key: "listSaved",
+        },
     },
     {
         name: "Upper Case",
@@ -190,6 +198,11 @@ let options = [
     {
         name: "camelCase", description: "Convert text to camelCase", value: {
             key: "camelCase"
+        }
+    },
+    {
+        name: "Reverse camelCase", description: "Convert camelCase to Human readable", value: {
+            key: "reverseCamelCase"
         }
     },
     {
@@ -408,8 +421,8 @@ const runAllTransformations = (all) => {
 
 let clipboardText = await clipboard.readText()
 let operations: { name: string, params: any[] }[] = []
-const cache = await db(`text-manipulation`, { usage: {}, timestamps: {}, last: null, persisted: {} });
-let lastTransformations = JSON.parse(cache.last)
+const cache = await db(`text-manipulation`, {usage: {}, timestamps: {}, last: null, persisted: {}});
+let lastTransformations = cache.last
 
 loop: while (true) {
     let transformation = await arg(
@@ -418,13 +431,15 @@ loop: while (true) {
             hint: operations.map(o => o.name).join(' > '),
         },
         options
-            .map(option=> {
+            .map(option => {
                 //last transformation if not available
-                if (option.value.key === 'last' && (!lastTransformations || operations.length)) return null;
+                if (option.value.key === 'last' && (!lastTransformations.length || operations.length)) return null;
                 //hide finish if no operations yet
                 if (option.value.key === 'finish' && !operations.length) return null;
                 //hide save if no operations yet
                 if (option.value.key === "save" && !operations.length) return null;
+
+                if (option.value.key === "listSaved" && (operations.length > 0 || Object.keys(cache.persisted).length === 0)) return null;
                 return option;
             })
             .filter(Boolean)
@@ -438,6 +453,9 @@ loop: while (true) {
 
                 if (a.value.key === 'save') return -1;
                 if (b.value.key === 'save') return 1;
+
+                if (a.value.key === 'listSaved') return -1;
+                if (b.value.key === 'listSaved') return 1;
 
                 const now = Date.now();
                 const timeDecay = 3600 * 24 * 7 * 1000; // Time decay in milliseconds (e.g., 1 week)
@@ -482,9 +500,24 @@ loop: while (true) {
             break;
         case "save":
             const transformationName = await arg("Enter a name for this transformations:");
-            log(transformationName)
-            cache.persisted[transformationName] = operations;
+
+            cache.persisted[transformations.camelCase(transformationName)] = operations;
             await cache.write();
+            break;
+        case "listSaved":
+            const savedTransformationName = await arg(
+                "Select a saved transformation to apply:",
+                Object.keys(cache.persisted).map((name) => {
+                    return {
+                        name: transformations.reverseCamelCase(name),
+                        value: name,
+                    };
+                })
+            );
+            const savedTransformation = cache.persisted[savedTransformationName];
+            clipboardText = runAllTransformations(savedTransformation);
+            operations = [...savedTransformation]
+            lastTransformations = [];
             break;
         default:
             const result = await handleTransformation(clipboardText, transformation);
@@ -500,7 +533,7 @@ loop: while (true) {
 }
 
 //store last transformations
-cache.last = JSON.stringify(operations);
+cache.last = operations;
 await cache.write();
 
 await clipboard.writeText(clipboardText)
