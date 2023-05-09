@@ -145,7 +145,7 @@ let transformations = {
 
 let options = [
     {
-        name: "Last Transformations",
+        name: "Perform Last Transformations",
         description: "Perform the last transformations on the text and prompt for next",
         value: {
             key: "last",
@@ -413,11 +413,19 @@ loop: while (true) {
             hint: operations.map(o => o.name).join(' > '),
         },
         options
+            .map(option=> {
+                if (option.value.key === 'last' && !lastTransformations) return null;
+                if (option.value.key === 'finish' && !operations.length) return null;
+                return option;
+            })
+            .filter(Boolean)
             .sort((a, b) => {
-                if (a.value.key === 'finish') return -1;
-                if (b.value.key === 'finish') return 1;
+
                 if (a.value.key === 'last') return -1;
                 if (b.value.key === 'last') return 1;
+
+                if (a.value.key === 'finish') return -1;
+                if (b.value.key === 'finish') return 1;
 
                 const now = Date.now();
                 const timeDecay = 3600 * 24 * 7 * 1000; // Time decay in milliseconds (e.g., 1 week)
@@ -455,6 +463,7 @@ loop: while (true) {
         case 'last':
             clipboardText = runAllTransformations(lastTransformations);
             operations = [...lastTransformations]
+            lastTransformations = null;
             break;
         default:
             const result = await handleTransformation(clipboardText, transformation);
