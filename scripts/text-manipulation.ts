@@ -159,6 +159,11 @@ let options = [
         }
     },
     {
+        name: "Save Transformations",
+        description: "Save the current transformations under a custom name",
+        value: { key: "save" },
+    },
+    {
         name: "Upper Case",
         description: "Transform the entire text to upper case",
         value: {
@@ -403,7 +408,7 @@ const runAllTransformations = (all) => {
 
 let clipboardText = await clipboard.readText()
 let operations: { name: string, params: any[] }[] = []
-const cache = await db(`text-manipulation`, {usage: {}, timestamps: {}, last: null});
+const cache = await db(`text-manipulation`, { usage: {}, timestamps: {}, last: null, persisted: {} });
 let lastTransformations = JSON.parse(cache.last)
 
 loop: while (true) {
@@ -418,6 +423,8 @@ loop: while (true) {
                 if (option.value.key === 'last' && (!lastTransformations || operations.length)) return null;
                 //hide finish if no operations yet
                 if (option.value.key === 'finish' && !operations.length) return null;
+                //hide save if no operations yet
+                if (option.value.key === "save" && !operations.length) return null;
                 return option;
             })
             .filter(Boolean)
@@ -428,6 +435,9 @@ loop: while (true) {
 
                 if (a.value.key === 'finish') return -1;
                 if (b.value.key === 'finish') return 1;
+
+                if (a.value.key === 'save') return -1;
+                if (b.value.key === 'save') return 1;
 
                 const now = Date.now();
                 const timeDecay = 3600 * 24 * 7 * 1000; // Time decay in milliseconds (e.g., 1 week)
@@ -469,6 +479,12 @@ loop: while (true) {
             //remove last transformations from local memory
             //it is still persisted and will be updated if new transformations are applied
             lastTransformations = null;
+            break;
+        case "save":
+            const transformationName = await arg("Enter a name for this transformations:");
+            log(transformationName)
+            cache.persisted[transformationName] = operations;
+            await cache.write();
             break;
         default:
             const result = await handleTransformation(clipboardText, transformation);
