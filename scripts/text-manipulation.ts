@@ -439,7 +439,7 @@ loop: while (true) {
                 //hide save if no operations yet
                 if (option.value.key === "save" && !operations.length) return null;
 
-                if (option.value.key === "listSaved" && (operations.length > 0 || Object.keys(cache.persisted).length === 0)) return null;
+                if (option.value.key === "listSaved" && Object.keys(cache.persisted).length === 0) return null;
                 return option;
             })
             .filter(Boolean)
@@ -503,10 +503,14 @@ loop: while (true) {
 
             cache.persisted[transformations.camelCase(transformationName)] = operations;
             await cache.write();
-            break;
+            break loop;
         case "listSaved":
+            let flags = { delete: { name: "Delete", shortcut: "cmd+enter", } }
             const savedTransformationName = await arg(
-                "Select a saved transformation to apply:",
+                {
+                    placeholder: "Select a saved transformation to apply:",
+                    flags
+                },
                 Object.keys(cache.persisted).map((name) => {
                     return {
                         name: transformations.reverseCamelCase(name),
@@ -514,10 +518,19 @@ loop: while (true) {
                     };
                 })
             );
-            const savedTransformation = cache.persisted[savedTransformationName];
-            clipboardText = runAllTransformations(savedTransformation);
-            operations = [...savedTransformation]
-            lastTransformations = [];
+            if (flag.delete) {
+                let value = await arg("Are you sure you want to delete this transformation?", ['yes', 'no'])
+                if (value === "yes") {
+                    delete cache.persisted[savedTransformationName];
+                    await cache.write();
+                    await notify(`Transformation ${savedTransformationName} deleted`);
+                }
+            } else {
+                const savedTransformation = cache.persisted[savedTransformationName];
+                clipboardText = runAllTransformations(savedTransformation);
+                operations = [...savedTransformation]
+                lastTransformations = [];
+            }
             break;
         default:
             const result = await handleTransformation(clipboardText, transformation);
