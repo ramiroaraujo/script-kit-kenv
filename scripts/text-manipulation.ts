@@ -316,7 +316,7 @@ let options = [
             parameter: {
                 name: "Pattern",
                 description: "Enter a regex pattern to capture",
-                defaultValue: "(.+)|$1",
+                defaultValue: ".+",
             },
         },
     },
