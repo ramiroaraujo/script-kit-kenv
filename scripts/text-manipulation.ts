@@ -3,7 +3,7 @@
 
 import "@johnlindquist/kit"
 
-let transformations = {
+const transformations = {
     upperCase: text => text.toUpperCase(),
     lowerCase: text => text.toLowerCase(),
     capitalize: text => text.split('\n').map(line => line.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')).join('\n'),
@@ -141,36 +141,14 @@ let transformations = {
         const lines = text.split('\n');
         return lines.map((line, index) => `${index + 1}. ${line}`).join('\n');
     },
+    base64Encode: (text) => Buffer.from(text).toString('base64'),
     finish: text => text,
+    countLines: (text) => text.split('\n').length,
+    countWords: (text) => text.trim().split(/\s+/).length,
+    countCharacters: (text) => text.length,
 }
 
-let options = [
-    {
-        name: "Perform Last Transformations",
-        description: "Perform the last transformations on the text and prompt for next",
-        value: {
-            key: "last",
-        }
-    },
-    {
-        name: "Perform Transformations",
-        description: "Perform transformations on the text and copy to clipboard",
-        value: {
-            key: "finish",
-        }
-    },
-    {
-        name: "Save Transformations",
-        description: "Save the current transformations under a custom name",
-        value: {key: "save"},
-    },
-    {
-        name: "List Saved Transformations",
-        description: "List and execute saved transformation combos",
-        value: {
-            key: "listSaved",
-        },
-    },
+const options = [
     {
         name: "Upper Case",
         description: "Transform the entire text to upper case",
@@ -398,6 +376,63 @@ let options = [
         value: {
             key: "generateNumberedList",
         },
+    },
+    {
+        name: "Base64 Encode",
+        description: "Encode text using Base64",
+        value: {
+            key: "base64Encode",
+        },
+    },
+    {
+        name: "Count Lines",
+        description: "Count the number of lines",
+        value: {
+            key: "countLines",
+        },
+    },
+    {
+        name: "Count Words",
+        description: "Count the number of words",
+        value: {
+            key: "countWords",
+        },
+    },
+    {
+        name: "Count Characters",
+        description: "Count the number of characters",
+        value: {
+            key: "countCharacters",
+        },
+    },
+]
+
+const operationOptions = [
+    {
+        name: "Perform Last Transformations",
+        description: "Perform the last transformations on the text and prompt for next",
+        value: {
+            key: "last",
+        }
+    },
+    {
+        name: "Perform Transformations",
+        description: "Perform transformations on the text and copy to clipboard",
+        value: {
+            key: "finish",
+        }
+    },
+    {
+        name: "Save Transformations",
+        description: "Save the current transformations under a custom name",
+        value: {key: "save"},
+    },
+    {
+        name: "List Saved Transformations",
+        description: "List and execute saved transformation combos",
+        value: {
+            key: "listSaved",
+        },
     }
 ]
 
@@ -430,7 +465,7 @@ loop: while (true) {
             placeholder: "Choose a text transformation",
             hint: operations.map(o => o.name).join(' > '),
         },
-        options
+        [...options, ...operationOptions]
             .map(option => {
                 //last transformation if not available
                 if (option.value.key === 'last' && (!lastTransformations.length || operations.length)) return null;
@@ -477,10 +512,10 @@ loop: while (true) {
                     preview: () => {
                         try {
                             if (option.value.key === 'last') return md(`<pre>${runAllTransformations(lastTransformations)}</pre>`)
-                            if (option.value.parameter) throw '';
+                            if (option.value['parameter']) throw '';
                             return md(`<pre>${transformations[option.value.key](clipboardText)}</pre>`)
                         } catch (e) {
-                            return '...'
+                            return md(`<pre>${clipboardText}</pre>`)
                         }
                     },
                 }
