@@ -146,9 +146,19 @@ const transformations = {
     countLines: (text) => text.split('\n').length,
     countWords: (text) => text.trim().split(/\s+/).length,
     countCharacters: (text) => text.length,
+    sumAllNumbers: (text) => text.trim().split('\n')
+        .map(line => Number(line.trim()))
+        .reduce((total, num) => total + num, 0)
 }
 
 const options = [
+    {
+        name: "Sum All Numbers",
+        description: "Sum all numbers in each line",
+        value: {
+            key: "sumAllNumbers",
+        }
+    },
     {
         name: "Upper Case",
         description: "Transform the entire text to upper case",
