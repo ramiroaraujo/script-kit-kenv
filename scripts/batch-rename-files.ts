@@ -4,20 +4,25 @@
 import "@johnlindquist/kit";
 
 const renamings = {
-    prepend: (file, prefix) => `${prefix}${file}`,
-    append: (file, suffix) => {
-        const fileParts = file.split('.');
-        const extension = fileParts.pop();
-        const fileName = fileParts.join('.');
-        return `${fileName}${suffix}.${extension}`;
+    prepend: (files, prefix) => files.map(file => `${prefix}${file}`),
+    append: (files, suffix) => {
+        return files.map(file => {
+            const fileParts = file.split('.');
+            const extension = fileParts.pop();
+            const fileName = fileParts.join('.');
+            return `${fileName}${suffix}.${extension}`;
+        })
     },
-    replaceWithRegex: (file, [search, replace]) => {
-        const fileParts = file.split('.');
-        const extension = fileParts.pop();
-        const fileName = fileParts.join('.');
-        return fileName.replace(new RegExp(search, 'g'), replace) + '.' + extension;
+    replaceWithRegex: (files, regexParts) => {
+        const [search, replace] = regexParts.split('|');
+        return files.map(file => {
+            const fileParts = file.split('.');
+            const extension = fileParts.pop();
+            const fileName = fileParts.join('.');
+            return fileName.replace(new RegExp(search, 'g'), replace) + '.' + extension;
+        })
     },
-    generateNumberedList: (file, index) => `${index}-${file}`
+    generateNumberedList: (files, index = 0) => files.map((file, i) => `${index + i + 1}_${file}`)
 };
 
 const options = [
@@ -35,7 +40,7 @@ const options = [
     },
     {
         name: 'Replace with regex',
-        value: { key: 'replaceWithRegex', parameter: { defaultValue: 'search,replace' } },
+        value: { key: 'replaceWithRegex', parameter: { defaultValue: '.+|$1' } },
     },
     {
         name: 'Generate Numbered List',
@@ -51,14 +56,15 @@ let originalFiles = [...files];
 
 const handleRenaming = async (files, renaming) => {
     let { key, parameter } = renaming;
+    let func = renamings[key];
     let paramValue = parameter
         ? await arg({
             input: parameter.defaultValue,
-        },(input) => md(`<pre>${files.map(f => renamings[key](f, input)).join('\n')}</pre>`))
+        },(input) => md(`<pre>${func.apply(null, [files, input]).join('\n')}</pre>`))
         : null;
-    return files.map((file) => renamings[key](file, paramValue));
-};
 
+    return func.apply(null, [files, paramValue]);
+};
 
 let operations = [];
 let rerun = true;
@@ -85,7 +91,7 @@ while (rerun) {
                     preview: () => {
                         try {
                             if (option.value.parameter) throw ''
-                            const renamedFiles = files.map(file => renamings[option.value.key](file));
+                            const renamedFiles = renamings[option.value.key](files);
                             return md(`<pre>${renamedFiles.join('\n')}</pre>`)
                         } catch (e) {
                             return md(`<pre>${files.join('\n')}</pre>`)
