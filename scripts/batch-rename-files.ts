@@ -51,8 +51,8 @@ const options = [
 
 let files = (await getSelectedFile()).split('\n');
 let basePath = files[0].split('/').slice(0, -1).join('/');
-files = files.map(file => file.split('/').pop().trim());
-let originalFiles = [...files];
+let fileNames = files.map(file => file.split('/').pop().trim().split('.').slice(0, -1).join('.'))
+let extensions =files.map(file => file.split('/').pop().trim().split('.').pop())
 
 const handleRenaming = async (files, renaming) => {
     let { key, parameter } = renaming;
@@ -60,11 +60,18 @@ const handleRenaming = async (files, renaming) => {
     let paramValue = parameter
         ? await arg({
             input: parameter.defaultValue,
-        },(input) => md(`<pre>${func.apply(null, [files, input]).join('\n')}</pre>`))
+        },(input) => {
+            const preview = func.apply(null, [files, input])
+            return md(`<pre>${renderRenames(preview)}</pre>`);
+        })
         : null;
 
     return func.apply(null, [files, paramValue]);
 };
+
+const renderRenames = (files) => {
+    return files.map((file, i) => `${file}.${extensions[i]}`).join('\n');
+}
 
 let operations = [];
 let rerun = true;
@@ -91,10 +98,10 @@ while (rerun) {
                     preview: () => {
                         try {
                             if (option.value.parameter) throw ''
-                            const renamedFiles = renamings[option.value.key](files);
-                            return md(`<pre>${renamedFiles.join('\n')}</pre>`)
+                            const renamedFiles = renamings[option.value.key](fileNames);
+                            return md(`<pre>${renderRenames(renamedFiles)}</pre>`)
                         } catch (e) {
-                            return md(`<pre>${files.join('\n')}</pre>`)
+                             return md(`<pre>${renderRenames(fileNames)}</pre>`)
                         }
                     },
                 };
@@ -108,11 +115,12 @@ while (rerun) {
         await cache.write();
         operations.push(renaming.key);
 
-        files = await handleRenaming(files, renaming);
+        fileNames = await handleRenaming(fileNames, renaming);
     }
 }
-for (let i = 0; i < files.length; i++) {
-    await mv(`${basePath}/${originalFiles[i]}`, `${basePath}/${files[i]}`);
+debugger;
+for (let i = 0; i < fileNames.length; i++) {
+    await mv(files[i], `${basePath}/${fileNames[i]}.${extensions[i]}`);
 }
 
 await notify("Files renamed successfully");
