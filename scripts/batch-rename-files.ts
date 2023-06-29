@@ -4,25 +4,13 @@
 import "@johnlindquist/kit";
 
 const renamings = {
-    prepend: (files, prefix) => files.map(file => `${prefix}${file}`),
-    append: (files, suffix) => {
-        return files.map(file => {
-            const fileParts = file.split('.');
-            const extension = fileParts.pop();
-            const fileName = fileParts.join('.');
-            return `${fileName}${suffix}.${extension}`;
-        })
-    },
-    replaceWithRegex: (files, regexParts) => {
+    prepend: (filenames, extensions, prefix) => filenames.map((file, i) => `${prefix}${file}.${extensions[i]}`),
+    append: (filenames, extensions, suffix) => filenames.map((file, i) => `${file}${suffix}.${extensions[i]}`),
+    replaceWithRegex: (filenames, extensions, regexParts) => {
         const [search, replace] = regexParts.split('|');
-        return files.map(file => {
-            const fileParts = file.split('.');
-            const extension = fileParts.pop();
-            const fileName = fileParts.join('.');
-            return fileName.replace(new RegExp(search, 'g'), replace) + '.' + extension;
-        })
+        return filenames.map((file, i) => `${file.replace(new RegExp(search, 'g'), replace)}.${extensions[i]}`);
     },
-    generateNumberedList: (files, index = 0) => files.map((file, i) => `${index + i + 1}_${file}`)
+    generateNumberedList: (filenames, extensions, index = 0) => filenames.map((file, i) => `${index + i + 1}_${file}.${extensions[i]}`)
 };
 
 const options = [
@@ -51,27 +39,25 @@ const options = [
 
 let files = (await getSelectedFile()).split('\n');
 let basePath = files[0].split('/').slice(0, -1).join('/');
-let fileNames = files.map(file => file.split('/').pop().trim().split('.').slice(0, -1).join('.'))
-let extensions =files.map(file => file.split('/').pop().trim().split('.').pop())
 
-const handleRenaming = async (files, renaming) => {
+let filenames = files.map(file => file.split('/').pop().split('.')[0]);
+let extensions = files.map(file => file.split('/').pop().split('.')[1]);
+
+// files = files.map(file => file.split('/').pop().trim());
+let originalFiles = [...filenames];
+
+const handleRenaming = async (filenames, extensions, renaming) => {
     let { key, parameter } = renaming;
     let func = renamings[key];
     let paramValue = parameter
         ? await arg({
             input: parameter.defaultValue,
-        },(input) => {
-            const preview = func.apply(null, [files, input])
-            return md(`<pre>${renderRenames(preview)}</pre>`);
-        })
+        },(input) => md(`<pre>${func.apply(null, [filenames, extensions, input]).join('\n')}</pre>`))
         : null;
 
-    return func.apply(null, [files, paramValue]);
+    debugger;
+    return func.apply(null, [filenames, extensions, paramValue]);
 };
-
-const renderRenames = (files) => {
-    return files.map((file, i) => `${file}.${extensions[i]}`).join('\n');
-}
 
 let operations = [];
 let rerun = true;
@@ -98,10 +84,10 @@ while (rerun) {
                     preview: () => {
                         try {
                             if (option.value.parameter) throw ''
-                            const renamedFiles = renamings[option.value.key](fileNames);
-                            return md(`<pre>${renderRenames(renamedFiles)}</pre>`)
+                            const renamedFiles = renamings[option.value.key](filenames);
+                            return md(`<pre>${renamedFiles.join('\n')}</pre>`)
                         } catch (e) {
-                             return md(`<pre>${renderRenames(fileNames)}</pre>`)
+                            return md(`<pre>${filenames.join('\n')}</pre>`)
                         }
                     },
                 };
@@ -115,12 +101,12 @@ while (rerun) {
         await cache.write();
         operations.push(renaming.key);
 
-        fileNames = await handleRenaming(fileNames, renaming);
+        filenames = await handleRenaming(filenames, extensions, renaming);
+
     }
 }
-debugger;
-for (let i = 0; i < fileNames.length; i++) {
-    await mv(files[i], `${basePath}/${fileNames[i]}.${extensions[i]}`);
+for (let i = 0; i < filenames.length; i++) {
+    await mv(`${basePath}/${originalFiles[i]}`, `${basePath}/${filenames[i]}`);
 }
 
 await notify("Files renamed successfully");
