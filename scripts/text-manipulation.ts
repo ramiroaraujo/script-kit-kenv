@@ -3,6 +3,8 @@
 
 import "@johnlindquist/kit"
 
+const xmlBeautifier = await npm("xml-beautifier");
+
 const transformations = {
     upperCase: text => text.toUpperCase(),
     lowerCase: text => text.toLowerCase(),
@@ -150,6 +152,8 @@ const transformations = {
         .map(line => Number(line.trim()))
         .reduce((total, num) => total + num, 0),
     base64Decode: (text) => Buffer.from(text, 'base64').toString('utf-8'),
+    jsonPrettyPrint: text => JSON.stringify(JSON.parse(text), null, 2),
+    xmlPrettyPrint: text => xmlBeautifier(text),
 }
 
 const options = [
@@ -399,7 +403,7 @@ const options = [
         name: "Base64 Decode",
         description: "Decode text using Base64",
         value: {
-            key: "base64Encode",
+            key: "base64Decode",
         },
     },
     {
@@ -423,6 +427,16 @@ const options = [
             key: "countCharacters",
         },
     },
+    {
+        name: "JSON Pretty Print",
+        description: "Formats JSON strings for better readability",
+        value: { key: "jsonPrettyPrint" }
+    },
+    {
+        name: "XML Pretty Print",
+        description: "Formats XML strings for better readability",
+        value: { key: "xmlPrettyPrint" },
+    }
 ]
 
 const operationOptions = [
