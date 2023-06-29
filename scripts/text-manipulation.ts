@@ -467,7 +467,7 @@ const runAllTransformations = (all) => {
 let clipboardText = await clipboard.readText()
 let operations: { name: string, params: any[] }[] = []
 const cache = await db(`text-manipulation`, {usage: {}, timestamps: {}, last: null, persisted: {}});
-let lastTransformations = cache.last
+let lastTransformations = cache.last ?? []
 
 loop: while (true) {
     let transformation = await arg(
