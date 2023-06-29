@@ -148,7 +148,8 @@ const transformations = {
     countCharacters: (text) => text.length,
     sumAllNumbers: (text) => text.trim().split('\n')
         .map(line => Number(line.trim()))
-        .reduce((total, num) => total + num, 0)
+        .reduce((total, num) => total + num, 0),
+    base64Decode: (text) => Buffer.from(text, 'base64').toString('utf-8'),
 }
 
 const options = [
@@ -390,6 +391,13 @@ const options = [
     {
         name: "Base64 Encode",
         description: "Encode text using Base64",
+        value: {
+            key: "base64Encode",
+        },
+    },
+    {
+        name: "Base64 Decode",
+        description: "Decode text using Base64",
         value: {
             key: "base64Encode",
         },
