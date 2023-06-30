@@ -43,7 +43,7 @@ const envVars = JSON.parse(cloudRunEnv.stdout).spec.template.spec.containers[0].
 const configPath = home(`FactoryFix/${folder}/config.env`);
 
 // 6. Make a copy of the original config.env
-const backupPath = home(`FactoryFix/${folder}/config.env.backup`);
+const backupPath = home(`FactoryFix/${folder}/config.backup.env`);
 await copyFile(configPath, backupPath);
 
 // Create a dictionary from the envVars array for easy access
