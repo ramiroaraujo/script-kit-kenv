@@ -272,5 +272,5 @@ if (url.type === 'run') {
     exit();
 }
 
-//open url in chrome in FF profile
+//open url in chrome in ff profile
 await exec(`open -na "Google Chrome" --args --profile-directory="Profile 1" "${finalUrl}"`)

@@ -1,4 +1,4 @@
-// Name: FF Generate JWT Token
+// Name: ff Generate JWT Token
 
 import "@johnlindquist/kit";
 

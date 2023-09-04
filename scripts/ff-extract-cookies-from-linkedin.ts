@@ -1,4 +1,4 @@
-// Name: FF Extract Cookies from LinkedIn
+// Name: ff Extract Cookies from LinkedIn
 
 import "@johnlindquist/kit";
 

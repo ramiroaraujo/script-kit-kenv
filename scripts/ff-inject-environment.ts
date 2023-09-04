@@ -1,4 +1,4 @@
-// Name: FF Inject Environment
+// Name: ff Inject Environment
 
 import "@johnlindquist/kit";
 
