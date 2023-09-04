@@ -28,11 +28,78 @@ const url = await arg("Choose a url", [
         },
         {
             name: 'Firestore', value: {
-                url: 'https://console.cloud.google.com/firestore?project=',
-                query: 'https://console.cloud.google.com/firestore/databases/-default-/data/query?project=',
+                url: 'https://console.cloud.google.com/firestore/databases/-default-?project=',
+                query: 'https://console.cloud.google.com/firestore/databases/-default-?project=',
                 type: 'firestore',
                 // hardcoded since we don't have a way to get the collections from the cli
-                collections: ["ats_analytics__application", "ats_anywhere_service__indeed_employer_information", "ats_anywhere_service__indeed_employer_request_information", "ats_anywhere_service__job", "ats_application_messaging__pro_screener_questions_flow", "ats_application_scoring__pro_scoring", "ats_calendar_api#calendar_integration", "ats_calendar_api#interviews", "ats_candidate_discovery__ats_viewed_candidates", "ats_candidate_discovery__saved_search", "ats_candidate_discovery__saved_search_notified_pros", "ats_candidate_discovery__shortlist", "ats_candidate_discovery__shortlist_pro", "ats_dashboard_jobs", "ats_employer__domain_blacklist", "ats_employer__employer_domain", "ats_employer_conversation#ats_conversation_participants", "ats_employer_conversation__job_summary", "ats_employer_feature", "ats_employer_inbox__notification", "ats_integrator", "ats_integrator_applications", "ats_integrator_customers", "ats_integrator_jobs", "ats_subscription__subscription", "ats_user_preferences__user", "careeronestop_scraper__occupations", "careeronestop_scraper__school_programs", "cities_zip", "companies", "jb-allow-listed-urls", "jb-source-primary-allow-list", "jb_notifications_queue", "jb_user_application_history", "jb_user_outreach_email_mappings", "jd_bid_log", "jd_craigslist_posted_jobs", "jd_failed_external_application", "jd_feed_level", "jd_job_publisher_daily_report_failure_log", "jd_job_publisher_level", "jd_publisher_config", "jn_message_logs", "job-coordinates", "jobCoordinates", "job_feeds__application_target", "job_feeds__applications_sync", "job_feeds__bid_log", "job_feeds__job_bids", "job_feeds__linkedin_promoted_jobs", "job_feeds__slot_based_publishers_config", "job_ingest_cache", "job_variation__job_title_variations", "jobs", "scraper_configuration", "scraper_configuration_flagged", "seo-city-pages", "seo-job-titles-pages", "ub_linkedin_cookies"]
+                collections: [
+                    'ats-job__temporary-job-description',
+                    'ats-job__temporary-screening-questions',
+                    'ats_analytics__application',
+                    'ats_anywhere_service__indeed_employer_information',
+                    'ats_anywhere_service__indeed_employer_request_information',
+                    'ats_anywhere_service__job',
+                    'ats_application_messaging__pro_screener_questions_flow',
+                    'ats_application_scoring__pro_scoring',
+                    'ats_calendar_api#calendar_integration',
+                    'ats_calendar_api#interviews',
+                    'ats_candidate_discovery__ats_viewed_candidates',
+                    'ats_candidate_discovery__pro_unlocks',
+                    'ats_candidate_discovery__saved_search',
+                    'ats_candidate_discovery__saved_search_notified_pros',
+                    'ats_candidate_discovery__shortlist',
+                    'ats_candidate_discovery__shortlist_pro',
+                    'ats_dashboard_jobs',
+                    'ats_employer__domain_blacklist',
+                    'ats_employer__employer_domain',
+                    'ats_employer_conversation#ats_conversation_participants',
+                    'ats_employer_conversation__job_summary',
+                    'ats_employer_feature',
+                    'ats_employer_inbox__notification',
+                    'ats_integrator',
+                    'ats_integrator_applications',
+                    'ats_integrator_customers',
+                    'ats_integrator_jobs',
+                    'ats_integrator_ukg_jobs_cache',
+                    'ats_subscription__subscription',
+                    'ats_subscription__subscription_history',
+                    'ats_user_preferences__user',
+                    'careeronestop_scraper__occupations',
+                    'careeronestop_scraper__school_programs',
+                    'cities_zip',
+                    'companies',
+                    'jb-allow-listed-urls',
+                    'jb-source-primary-allow-list',
+                    'jb_linkedin_job_post',
+                    'jb_notifications_queue',
+                    'jb_user_application_history',
+                    'jb_user_outreach_email_mappings',
+                    'jd_bid_log',
+                    'jd_craigslist_posted_jobs',
+                    'jd_failed_external_application',
+                    'jd_feed_level',
+                    'jd_job_publisher_daily_report_failure_log',
+                    'jd_job_publisher_level',
+                    'jd_publisher_config',
+                    'jn_message_logs',
+                    'job-coordinates',
+                    'jobCoordinates',
+                    'job_feeds__application_target',
+                    'job_feeds__applications_sync',
+                    'job_feeds__bid_log',
+                    'job_feeds__job_bids',
+                    'job_feeds__linkedin_promoted_jobs',
+                    'job_feeds__slot_based_publishers_config',
+                    'job_ingest_cache',
+                    'job_variation__job_title_variations',
+                    'job_variation__job_variations',
+                    'jobs',
+                    'scraper_configuration',
+                    'scraper_configuration_flagged',
+                    'seo-city-pages',
+                    'seo-job-titles-pages',
+                    'ub_linkedin_cookies'
+                ]
             }
         },
         {
@@ -142,17 +209,17 @@ if (url.type === 'run') {
         },
     }
 
-    const collection = await arg({
+    const result = await arg({
         placeholder: "Choose a Firestore Collection (Cmd + enter to open the query)",
         flags,
     }, [
-        {name: 'Open', value: {url: finalUrl, query: url.query}}, ...collections])
+        {name: 'Open', value: {url: url.query, query: url.query}}, ...collections])
 
-    if (collection.url) {
+    if (result.url) {
         if (!flag?.query) {
-            finalUrl = collection.url
+            finalUrl = result.url
         } else {
-            finalUrl = collection.query
+            finalUrl = result.query
         }
     }
 
