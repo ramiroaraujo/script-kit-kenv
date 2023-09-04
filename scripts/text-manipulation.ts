@@ -153,6 +153,7 @@ const transformations = {
         .reduce((total, num) => total + num, 0),
     base64Decode: (text) => Buffer.from(text, 'base64').toString('utf-8'),
     jsonPrettyPrint: text => JSON.stringify(JSON.parse(text), null, 2),
+    jsonMinify: text => JSON.stringify(JSON.parse(text)),
     xmlPrettyPrint: text => xmlBeautifier(text),
 }
 
@@ -433,6 +434,11 @@ const options = [
         value: { key: "jsonPrettyPrint" }
     },
     {
+        name: "JSON Minify",
+        description: "Minifies JSON String",
+        value: { key: "jsonMinify" }
+    },
+    {
         name: "XML Pretty Print",
         description: "Formats XML strings for better readability",
         value: { key: "xmlPrettyPrint" },
@@ -618,4 +624,4 @@ await cache.write();
 
 await clipboard.writeText(clipboardText)
 
-await notify("Text transformation applied and copied to clipboard")
+notify("Text transformation applied and copied to clipboard")
