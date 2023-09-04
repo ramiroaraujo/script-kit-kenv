@@ -563,7 +563,7 @@ loop: while (true) {
 
             //remove last transformations from local memory
             //it is still persisted and will be updated if new transformations are applied
-            lastTransformations = null;
+            lastTransformations = [];
             break;
         case "save":
             const transformationName = await arg("Enter a name for this transformations:");
