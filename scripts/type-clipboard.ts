@@ -7,7 +7,7 @@ import "@johnlindquist/kit"
 const clipboardText = await clipboard.readText()
 
 if (clipboardText.length > 1000) {
-    await notify("Clipboard content is too long")
+    notify("Clipboard content is too long")
     exit()
 }
 
