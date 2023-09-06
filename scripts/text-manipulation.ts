@@ -478,7 +478,13 @@ const handleTransformation = async (text, transformation) => {
     let {key, parameter} = transformation;
     let paramValue = parameter ? await arg({
         input: parameter.defaultValue,
-    }, (input) => md(`<pre>${transformations[key](text, input)}</pre>`)) : null;
+    }, (input) => {
+        try {
+            return md(`<pre>${transformations[key](text, input)}</pre>`);
+        } catch (e) {
+            return md(`<pre>${text}</pre>`)
+        }
+    }) : null;
     return {
         text: transformations[key](text, paramValue),
         name: key,
