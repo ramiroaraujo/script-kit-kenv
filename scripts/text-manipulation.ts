@@ -155,6 +155,12 @@ const transformations = {
     jsonPrettyPrint: text => JSON.stringify(JSON.parse(text), null, 2),
     jsonMinify: text => JSON.stringify(JSON.parse(text)),
     xmlPrettyPrint: text => xmlBeautifier(text),
+    limitLines: (text, limit) => {
+        let [limitNumber, offset] = limit.split(',');
+        limitNumber = parseInt(limitNumber);
+        offset = offset ? parseInt(offset) : 0;
+        return text.split('\n').slice(offset, offset + limitNumber).join('\n');
+    }
 }
 
 const options = [
@@ -431,17 +437,29 @@ const options = [
     {
         name: "JSON Pretty Print",
         description: "Formats JSON strings for better readability",
-        value: { key: "jsonPrettyPrint" }
+        value: {key: "jsonPrettyPrint"}
     },
     {
         name: "JSON Minify",
         description: "Minifies JSON String",
-        value: { key: "jsonMinify" }
+        value: {key: "jsonMinify"}
     },
     {
         name: "XML Pretty Print",
         description: "Formats XML strings for better readability",
-        value: { key: "xmlPrettyPrint" },
+        value: {key: "xmlPrettyPrint"},
+    },
+    {
+        name: "Limit Lines",
+        description: "Limit the number of lines, similar to SQL limits",
+        value: {
+            key: "limitLines",
+            parameter: {
+                name: "Regex and Replacement",
+                description: "Enter a limit number of lines, comma to specify offset",
+                defaultValue: "10",
+            },
+        }
     }
 ]
 
@@ -584,7 +602,7 @@ loop: while (true) {
             await cache.write();
             break loop;
         case "listSaved":
-            let flags = { delete: { name: "Delete", shortcut: "cmd+enter", } }
+            let flags = {delete: {name: "Delete", shortcut: "cmd+enter",}}
             const savedTransformationName = await arg(
                 {
                     placeholder: "Select a saved transformation to apply:",
