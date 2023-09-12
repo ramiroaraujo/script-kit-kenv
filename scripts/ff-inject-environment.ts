@@ -49,6 +49,33 @@ await copyFile(configPath, backupPath);
 // Create a dictionary from the envVars array for easy access
 const envVarsDict = Object.fromEntries(envVars.map(variable => [variable.name, variable.value]));
 
+// If GOOGLE_AUTH_AUDIENCE exists, set it to blank
+if ('GOOGLE_AUTH_AUDIENCE' in envVarsDict) {
+    envVarsDict['GOOGLE_AUTH_AUDIENCE'] = '';
+}
+
+// If USE_GOOGLE_S2S_AUTH exists, set it to false
+if ('USE_GOOGLE_S2S_AUTH' in envVarsDict) {
+    envVarsDict['USE_GOOGLE_S2S_AUTH'] = 'false';
+}
+
+const allowedUrls = new Set(['FF_UI_V2_URL', 'JOB_BOARD_UI_URL', 'UI2_BASE_URL']);
+let urlTail = '';
+
+for (let [key, value] of Object.entries(envVarsDict)) {
+    if (key.endsWith('_URL') && value.includes('.a.run.app')) {
+        urlTail = value.match(/-([a-z0-9]+-uc\.a\.run\.app)$/)[1];
+        break;
+    }
+}
+
+for (let [key, value] of Object.entries(envVarsDict)) {
+    if (key.endsWith('_URL') && !allowedUrls.has(key) && value.endsWith(urlTail)) {
+        let subdomain = value.split(`https://`)[1].split(`-${urlTail}`)[0];
+        envVarsDict[key] = `http://${subdomain}:8080`;
+    }
+}
+
 // 7. Read the original file line by line and replace the values as needed
 let configLines = (await readFile(configPath, 'utf-8')).split('\n');
 let newConfigLines = [];
@@ -76,6 +103,9 @@ for (let line of configLines) {
 for (let [key, value] of Object.entries(envVarsDict)) {
     newConfigLines.push(`${key}=${value}`);
 }
+
+//override GOOGLE_AUTH_AUDIENCE to blank, USE_GOOGLE_S2S_AUTH to false and any _URL ending env to its local form
+
 
 // 8. Write the updated environment variables back to config.env
 let newConfig = newConfigLines.join('\n');
