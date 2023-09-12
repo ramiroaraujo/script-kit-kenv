@@ -44,7 +44,10 @@ const configPath = home(`FactoryFix/${folder}/config.env`);
 
 // 6. Make a copy of the original config.env
 const backupPath = home(`FactoryFix/${folder}/config.backup.env`);
-await copyFile(configPath, backupPath);
+
+if (!await pathExists(backupPath)) {
+    await copyFile(configPath, backupPath);
+}
 
 // Create a dictionary from the envVars array for easy access
 const envVarsDict = Object.fromEntries(envVars.map(variable => [variable.name, variable.value]));
