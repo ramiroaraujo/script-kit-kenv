@@ -15,6 +15,30 @@ const env = await arg("Choose an environment", [
     'ff-app-e2e',
 ])
 
+// ----------------- cache helper ----------------
+let cacheData = await db(`ff-pubsub-payload-${env}`, {content: {}})
+let expire30days = 1000 * 60 * 60 * 24 * 30
+let expire1day = 1000 * 60 * 60 * 24 * 1
+const cache = async (type, expires, invoke: Function) => {
+    if (cacheData.data.content[type]?.data && Date.now() - cacheData.data.content[type]?.expires < expires) {
+        return cacheData.data.content[type].data
+    }
+    try {
+        const data = await invoke()
+        cacheData.data.content[type] = {expires: Date.now() + expires, data}
+        await cacheData.write()
+        return data
+    } catch (e) {
+        notify(e.message)
+        exit()
+    }
+}
+const clearCache = async () => {
+    cacheData.data.content = {};
+    await cacheData.write();
+}
+// ----------------- cache helper ----------------
+
 //choose folder / service
 const allFolders = (await exec(`cd ~/FactoryFix && ls -d */`)).all.split('\n').map(folder => folder.replace('/', ''));
 const validFolders = allFolders.map(async folder => {
