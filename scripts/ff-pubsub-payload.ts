@@ -2,6 +2,8 @@
 
 import "@johnlindquist/kit"
 
+const dayjs = await npm('dayjs')
+
 // choose env
 const env = await arg("Choose an environment", [
     "ff-app-dev",
@@ -42,4 +44,50 @@ const serviceName = serviceNameMatch[1];
 const serviceUrl = (await exec(`/opt/homebrew/bin/gcloud run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
 
 //list pubsub topics for the service url
-const topics = JSON.parse((await exec(`gcloud pubsub subscriptions list --project=${env} --format=json | jq "[.[] | select(.pushConfig.oidcToken.audience == \\"${serviceUrl}\\")]`)).stdout)
+let subscriptions = await exec(`/opt/homebrew/bin/gcloud pubsub subscriptions list --project=${env} --format=json | /opt/homebrew/bin/jq "[.[] | select(.pushConfig.oidcToken.audience == \\"${serviceUrl}\\")]"`);
+const topics = JSON.parse(subscriptions.stdout)
+
+if (!topics.length) {
+    notify(`No topics found for ${serviceUrl}`)
+    exit();
+}
+
+const topic = await arg('Choose a topic', topics.map(topic => ({
+    name: topic.topic.split('/').pop(),
+    value: topic.name
+})))
+
+let payloads = []
+const dateUnits = ['week', 'day', 'hour', 'minute']
+let length = 10
+do {
+    let dateUnit = dateUnits.pop()
+    const execute = await exec(`/opt/homebrew/bin/gcloud logging read 'resource.labels.service_name="${serviceName}" severity="DEBUG" jsonPayload.body.subscription="${topic}" timestamp>="'$(/opt/homebrew/bin/gdate -d '-1 ${dateUnit}' --iso-8601=seconds --utc)'"' --format=json --project=${env} | /opt/homebrew/bin/jq '[.[] | .jsonPayload.body]'`)
+    payloads = JSON.parse(execute.stdout)
+} while (payloads.length < length && dateUnits.length)
+
+if (!payloads.length) {
+    notify(`No payloads found for ${topic}`)
+    exit();
+}
+
+const payload = await arg({
+    placeholder: 'Choose a payload',
+}, payloads.map(payload => ({
+    name: `From ${dayjs(payload.message.publishTime).format('MMM D, YYYY h:mm A')}`,
+    preview: () => {
+        const text = Buffer.from(payload.message.data, 'base64').toString('utf-8')
+        const pretty = JSON.stringify(JSON.parse(text), null, 2)
+            .replaceAll('\\n', '\n')
+        return `<pre>${pretty}</pre>`
+    },
+    value: payload
+})))
+
+const operation = await arg('What do you need?', [
+    {name: 'Copy payload to clipboard', description: 'Ready to paste as payload in a POST request', value: 'copy'},
+    { name: 'Copy the base64 decoded data to clipboard', description: 'Useful for modifying the data', value: 'copy-decoded' },
+])
+
+await clipboard.writeText(JSON.stringify(payload, null, 2))
+notify('Complete payload copied to clipboard')
