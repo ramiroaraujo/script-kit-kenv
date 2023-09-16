@@ -37,6 +37,7 @@ const clearCache = async () => {
     cacheData.data.content = {};
     await cacheData.write();
 }
+const invalidate = {name: 'Invalidate cache', value: 'invalidate'}
 // ----------------- cache helper ----------------
 
 //choose folder / service
@@ -65,6 +66,7 @@ let tfVars = await readFile(tfvarsPath, 'utf-8');
 const serviceNameMatch = tfVars.match(/^service_name\s*=\s*"([^"]+)"/m);
 const serviceName = serviceNameMatch[1];
 
+//cache topics for 30 days
 const topics:any[] = await cache(`topics.${serviceName}`, expire30days, async () => {
     const serviceUrl = (await exec(`/opt/homebrew/bin/gcloud run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
 
@@ -78,10 +80,15 @@ const topics:any[] = await cache(`topics.${serviceName}`, expire30days, async ()
     return topics
 })
 
-const topic = await arg('Choose a topic', topics.map(topic => ({
+const topic = await arg('Choose a topic', [...topics, invalidate].map(topic => ({
     name: topic.topic.split('/').pop(),
     value: topic.name
 })))
+if (topic === 'invalidate') {
+    await clearCache()
+    notify('Cache invalidated')
+    exit()
+}
 
 //cache payloads for a day
 let payloads:any[] = await cache(`payloads.${serviceName}.${topic}`, expire1day, async () => {
@@ -103,7 +110,7 @@ let payloads:any[] = await cache(`payloads.${serviceName}.${topic}`, expire1day,
 
 const payload = await arg({
     placeholder: 'Choose a payload',
-}, payloads.map(payload => ({
+}, [...payloads, invalidate].map(payload => ({
     name: `From ${dayjs(payload.message.publishTime).format('MMM D, YYYY h:mm A')}`,
     preview: () => {
         const text = Buffer.from(payload.message.data, 'base64').toString('utf-8')
@@ -113,6 +120,12 @@ const payload = await arg({
     },
     value: payload
 })))
+
+if (payload === 'invalidate') {
+    await clearCache()
+    notify('Cache invalidated')
+    exit()
+}
 
 const operation = await arg('What do you need?', [
     {name: 'Copy payload to clipboard', description: 'Ready to paste as payload in a POST request', value: 'copy'},
