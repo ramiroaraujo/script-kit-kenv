@@ -59,41 +59,47 @@ const folder = await arg({
 }, folders);
 
 const path = home(`FactoryFix/${folder}`)
-
 //extract service name, then service url
 const tfvarsPath = `${path}/deployment/terraform/terraform.tfvars`
 let tfVars = await readFile(tfvarsPath, 'utf-8');
 const serviceNameMatch = tfVars.match(/^service_name\s*=\s*"([^"]+)"/m);
 const serviceName = serviceNameMatch[1];
-const serviceUrl = (await exec(`/opt/homebrew/bin/gcloud run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
+
+const topics:any[] = await cache(`topics.${serviceName}`, expire30days, async () => {
+    const serviceUrl = (await exec(`/opt/homebrew/bin/gcloud run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
 
 //list pubsub topics for the service url
-let subscriptions = await exec(`/opt/homebrew/bin/gcloud pubsub subscriptions list --project=${env} --format=json | /opt/homebrew/bin/jq "[.[] | select(.pushConfig.oidcToken.audience == \\"${serviceUrl}\\")]"`);
-const topics = JSON.parse(subscriptions.stdout)
+    let subscriptions = await exec(`/opt/homebrew/bin/gcloud pubsub subscriptions list --project=${env} --format=json | /opt/homebrew/bin/jq "[.[] | select(.pushConfig.oidcToken.audience == \\"${serviceUrl}\\")]"`);
+    const topics = JSON.parse(subscriptions.stdout)
 
-if (!topics.length) {
-    notify(`No topics found for ${serviceUrl}`)
-    exit();
-}
+    if (!topics.length) {
+        throw new Error(`No topics found for ${serviceUrl}`)
+    }
+    return topics
+})
 
 const topic = await arg('Choose a topic', topics.map(topic => ({
     name: topic.topic.split('/').pop(),
     value: topic.name
 })))
 
-let payloads = []
-const dateUnits = ['week', 'day', 'hour', 'minute']
-let length = 10
-do {
-    let dateUnit = dateUnits.pop()
-    const execute = await exec(`/opt/homebrew/bin/gcloud logging read 'resource.labels.service_name="${serviceName}" severity="DEBUG" jsonPayload.body.subscription="${topic}" timestamp>="'$(/opt/homebrew/bin/gdate -d '-1 ${dateUnit}' --iso-8601=seconds --utc)'"' --format=json --project=${env} | /opt/homebrew/bin/jq '[.[] | .jsonPayload.body]'`)
-    payloads = JSON.parse(execute.stdout)
-} while (payloads.length < length && dateUnits.length)
+//cache payloads for a day
+let payloads:any[] = await cache(`payloads.${serviceName}.${topic}`, expire1day, async () => {
+    let payloads = []
+    const dateUnits = ['week', 'day', 'hour', 'minute']
+    let length = 10
+    do {
+        let dateUnit = dateUnits.pop()
+        const execute = await exec(`/opt/homebrew/bin/gcloud logging read 'resource.labels.service_name="${serviceName}" severity="DEBUG" jsonPayload.body.subscription="${topic}" timestamp>="'$(/opt/homebrew/bin/gdate -d '-1 ${dateUnit}' --iso-8601=seconds --utc)'"' --format=json --project=${env} | /opt/homebrew/bin/jq '[.[] | .jsonPayload.body]'`)
+        payloads = JSON.parse(execute.stdout)
+    } while (payloads.length < length && dateUnits.length)
 
-if (!payloads.length) {
-    notify(`No payloads found for ${topic}`)
-    exit();
-}
+    if (!payloads.length) {
+        throw new Error(`No payloads found for ${topic}`)
+    }
+
+    return payloads
+})
 
 const payload = await arg({
     placeholder: 'Choose a payload',
