@@ -89,5 +89,17 @@ const operation = await arg('What do you need?', [
     { name: 'Copy the base64 decoded data to clipboard', description: 'Useful for modifying the data', value: 'copy-decoded' },
 ])
 
-await clipboard.writeText(JSON.stringify(payload, null, 2))
-notify('Complete payload copied to clipboard')
+switch (operation) {
+    case 'copy':
+        await clipboard.writeText(JSON.stringify(payload, null, 2))
+        notify('Complete payload copied to clipboard')
+        break;
+    case 'copy-decoded':
+        const text = Buffer.from(payload.message.data, 'base64').toString('utf-8')
+        const pretty = JSON.stringify(JSON.parse(text), null, 2)
+        await clipboard.writeText(pretty)
+        notify('Decoded payload copied data to clipboard')
+        break;
+    default:
+        break;
+}
