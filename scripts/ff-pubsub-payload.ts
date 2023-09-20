@@ -45,57 +45,101 @@ const clearCache = async (path?: string) => {
 const invalidate = {name: 'Invalidate cache', type: 'invalidate', value: 'invalidate'}
 // ----------------- cache helper ----------------
 
-//choose folder / service
-const allFolders = (await exec(`cd ~/FactoryFix && ls -d */`)).all.split('\n').map(folder => folder.replace('/', ''));
-const validFolders = allFolders.map(async folder => {
-    try {
-        let path = home(`FactoryFix/${folder}/package.json`);
-        const file = await readFile(path, 'utf-8');
-        const packageJson = JSON.parse(file);
+// select type of operation
+let serviceName = ''
+let topic = ''
 
-        return packageJson.dependencies['@nestjs/core'] ? folder : null;
-    } catch (e) {
-        return null;
-    }
-});
+const operationType = await arg('How do you want to search for a PubSub?', [
+    {name: 'Search by topic', value: 'topic'},
+    {name: 'Search by service', value: 'service'}
+])
 
-const folders = (await Promise.all(validFolders)).filter(Boolean);
-const folder = await arg({
-    placeholder: "Select a folder to inject the debug config",
-}, folders);
+if (operationType === 'service') {
+    //choose folder / service
+    const allFolders = (await exec(`cd ~/FactoryFix && ls -d */`)).all.split('\n').map(folder => folder.replace('/', ''));
+    const validFolders = allFolders.map(async folder => {
+        try {
+            let path = home(`FactoryFix/${folder}/package.json`);
+            const file = await readFile(path, 'utf-8');
+            const packageJson = JSON.parse(file);
 
-const path = home(`FactoryFix/${folder}`)
+            return packageJson.dependencies['@nestjs/core'] ? folder : null;
+        } catch (e) {
+            return null;
+        }
+    });
+
+    const folders = (await Promise.all(validFolders)).filter(Boolean);
+    const folder = await arg({
+        placeholder: "Select a folder to inject the debug config",
+    }, folders);
+
+    const path = home(`FactoryFix/${folder}`)
 //extract service name, then service url
-const tfvarsPath = `${path}/deployment/terraform/terraform.tfvars`
-let tfVars = await readFile(tfvarsPath, 'utf-8');
-const serviceNameMatch = tfVars.match(/^service_name\s*=\s*"([^"]+)"/m);
-const serviceName = serviceNameMatch[1];
+    const tfvarsPath = `${path}/deployment/terraform/terraform.tfvars`
+    let tfVars = await readFile(tfvarsPath, 'utf-8');
+    const serviceNameMatch = tfVars.match(/^service_name\s*=\s*"([^"]+)"/m);
+    serviceName = serviceNameMatch[1];
 
 //cache topics for 30 days
-const topics: any[] = await cache(`topics.${serviceName}`, expire30days, async () => {
-    const serviceUrl = (await exec(`/opt/homebrew/bin/gcloud run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
+    const topics: any[] = await cache(`topics.${serviceName}`, expire30days, async () => {
+        const serviceUrl = (await exec(`/opt/homebrew/bin/gcloud run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
 
-    //list pubsub topics for the service url
-    let subscriptions = await exec(`/opt/homebrew/bin/gcloud pubsub subscriptions list --project=${env} --format=json | /opt/homebrew/bin/jq "[.[] | select(.pushConfig.oidcToken.audience == \\"${serviceUrl}\\")]"`);
-    const topics = JSON.parse(subscriptions.stdout)
+        //list pubsub topics for the service url
+        let subscriptions = await exec(`/opt/homebrew/bin/gcloud pubsub subscriptions list --project=${env} --format=json | /opt/homebrew/bin/jq "[.[] | select(.pushConfig.oidcToken.audience == \\"${serviceUrl}\\")]"`);
+        const topics = JSON.parse(subscriptions.stdout)
 
-    if (!topics.length) {
-        throw new Error(`No topics found for ${serviceUrl}`)
+        if (!topics.length) {
+            throw new Error(`No topics found for ${serviceUrl}`)
+        }
+        return topics
+    })
+
+    topic = await arg('Choose a topic', [...topics, invalidate].map(topic => {
+        const invalidate = topic.type === 'invalidate';
+        return ({
+            name: !invalidate ? topic.topic?.split('/').pop() : topic.name,
+            value: !invalidate ? topic.name : topic.value
+        });
+    }))
+    if (topic === 'invalidate') {
+        await clearCache(`topics.${serviceName}`)
+        notify('Cache invalidated')
+        exit()
     }
-    return topics
-})
+} else if (operationType === 'topic') {
+    //list all topics and prompt to select one
+    const topics:any[] = await cache(`topics`, expire30days, async () => {
+        const { stdout: reponse } = await exec(`/opt/homebrew/bin/gcloud pubsub subscriptions list --project=${env} --format=json`)
+        const subscriptions = JSON.parse(reponse)
+        const topics = subscriptions
+            .map(subscription => {
+                //https://ats-anywhere-3c4avboiyq-uc.a.run.app
+                try {
+                    const serviceName = subscription.pushConfig.oidcToken.audience.replace(/^https:\/\/(.+?)-\w{10}-uc\.a\.run\.app$/, '$1')
+                    return ({
+                        name: `${subscription.topic.split('/').pop()} on ${serviceName}`,
+                        value: {
+                            name: subscription.name,
+                            serviceName
+                        }
+                    })
+                } catch (e) {
+                    return;
+                }
+            })
+            .filter(Boolean)
+        return topics
+    })
 
-const topic = await arg('Choose a topic', [...topics, invalidate].map(topic => {
-    const invalidate = topic.type === 'invalidate';
-    return ({
-        name: !invalidate ? topic.topic?.split('/').pop() : topic.name,
-        value: !invalidate ? topic.name : topic.value
-    });
-}))
-if (topic === 'invalidate') {
-    await clearCache(`topics.${serviceName}`)
-    notify('Cache invalidated')
-    exit()
+    const selectedTopic:any = await arg('Choose a topic', [...topics, invalidate])
+    if (selectedTopic === 'invalidate') {
+        await clearCache(`topics`)
+        notify('Cache invalidated')
+        exit()
+    }
+    serviceName = selectedTopic.serviceName;
+    topic = selectedTopic.name;
 }
 
 //cache payloads for a day
@@ -105,8 +149,8 @@ let payloads: any[] = await cache(`payloads.${serviceName}.${topic}`, expire1day
     let length = 10
     do {
         let dateUnit = dateUnits.pop()
-        const execute = await exec(`/opt/homebrew/bin/gcloud logging read 'resource.labels.service_name="${serviceName}" severity="DEBUG" jsonPayload.body.subscription="${topic}" timestamp>="'$(/opt/homebrew/bin/gdate -d '-1 ${dateUnit}' --iso-8601=seconds --utc)'"' --limit=20 --format=json --project=${env} | /opt/homebrew/bin/jq '[.[] | .jsonPayload.body]'`)
-        payloads = JSON.parse(execute.stdout)
+        const {stdout: response} = await exec(`/opt/homebrew/bin/gcloud logging read 'resource.labels.service_name="${serviceName}" severity="DEBUG" jsonPayload.body.subscription="${topic}" timestamp>="'$(/opt/homebrew/bin/gdate -d '-1 ${dateUnit}' --iso-8601=seconds --utc)'"' --limit=20 --format=json --project=${env} | /opt/homebrew/bin/jq '[.[] | .jsonPayload.body]'`)
+        payloads = JSON.parse(response)
     } while (payloads.length < length && dateUnits.length)
 
     if (!payloads.length) {
