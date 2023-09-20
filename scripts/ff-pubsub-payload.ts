@@ -33,11 +33,16 @@ const cache = async (type, expires, invoke: Function) => {
         exit()
     }
 }
-const clearCache = async () => {
-    cacheData.data.content = {};
+const clearCache = async (path?: string) => {
+    if (path) {
+        cacheData.data.content[path] = undefined;
+    } else {
+        cacheData.data.content = {};
+    }
     await cacheData.write();
 }
-const invalidate = {name: 'Invalidate cache', value: 'invalidate'}
+
+const invalidate = {name: 'Invalidate cache', type: 'invalidate', value: 'invalidate'}
 // ----------------- cache helper ----------------
 
 //choose folder / service
@@ -67,10 +72,10 @@ const serviceNameMatch = tfVars.match(/^service_name\s*=\s*"([^"]+)"/m);
 const serviceName = serviceNameMatch[1];
 
 //cache topics for 30 days
-const topics:any[] = await cache(`topics.${serviceName}`, expire30days, async () => {
+const topics: any[] = await cache(`topics.${serviceName}`, expire30days, async () => {
     const serviceUrl = (await exec(`/opt/homebrew/bin/gcloud run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
 
-//list pubsub topics for the service url
+    //list pubsub topics for the service url
     let subscriptions = await exec(`/opt/homebrew/bin/gcloud pubsub subscriptions list --project=${env} --format=json | /opt/homebrew/bin/jq "[.[] | select(.pushConfig.oidcToken.audience == \\"${serviceUrl}\\")]"`);
     const topics = JSON.parse(subscriptions.stdout)
 
@@ -80,24 +85,27 @@ const topics:any[] = await cache(`topics.${serviceName}`, expire30days, async ()
     return topics
 })
 
-const topic = await arg('Choose a topic', [...topics, invalidate].map(topic => ({
-    name: topic.topic.split('/').pop(),
-    value: topic.name
-})))
+const topic = await arg('Choose a topic', [...topics, invalidate].map(topic => {
+    const invalidate = topic.type === 'invalidate';
+    return ({
+        name: !invalidate ? topic.topic?.split('/').pop() : topic.name,
+        value: !invalidate ? topic.name : topic.value
+    });
+}))
 if (topic === 'invalidate') {
-    await clearCache()
+    await clearCache(`topics.${serviceName}`)
     notify('Cache invalidated')
     exit()
 }
 
 //cache payloads for a day
-let payloads:any[] = await cache(`payloads.${serviceName}.${topic}`, expire1day, async () => {
+let payloads: any[] = await cache(`payloads.${serviceName}.${topic}`, expire1day, async () => {
     let payloads = []
     const dateUnits = ['week', 'day', 'hour', 'minute']
     let length = 10
     do {
         let dateUnit = dateUnits.pop()
-        const execute = await exec(`/opt/homebrew/bin/gcloud logging read 'resource.labels.service_name="${serviceName}" severity="DEBUG" jsonPayload.body.subscription="${topic}" timestamp>="'$(/opt/homebrew/bin/gdate -d '-1 ${dateUnit}' --iso-8601=seconds --utc)'"' --format=json --project=${env} | /opt/homebrew/bin/jq '[.[] | .jsonPayload.body]'`)
+        const execute = await exec(`/opt/homebrew/bin/gcloud logging read 'resource.labels.service_name="${serviceName}" severity="DEBUG" jsonPayload.body.subscription="${topic}" timestamp>="'$(/opt/homebrew/bin/gdate -d '-1 ${dateUnit}' --iso-8601=seconds --utc)'"' --limit=20 --format=json --project=${env} | /opt/homebrew/bin/jq '[.[] | .jsonPayload.body]'`)
         payloads = JSON.parse(execute.stdout)
     } while (payloads.length < length && dateUnits.length)
 
@@ -108,21 +116,27 @@ let payloads:any[] = await cache(`payloads.${serviceName}.${topic}`, expire1day,
     return payloads
 })
 
+log('before payload')
+
 const payload = await arg({
     placeholder: 'Choose a payload',
-}, [...payloads, invalidate].map(payload => ({
-    name: `From ${dayjs(payload.message.publishTime).format('MMM D, YYYY h:mm A')}`,
-    preview: () => {
-        const text = Buffer.from(payload.message.data, 'base64').toString('utf-8')
-        const pretty = JSON.stringify(JSON.parse(text), null, 2)
-            .replaceAll('\\n', '\n')
-        return `<pre>${pretty}</pre>`
-    },
-    value: payload
-})))
+}, [invalidate, ...payloads].map(payload => {
+    const invalidate = payload.type === 'invalidate';
+    const name = !invalidate ? `From ${dayjs(payload.message.publishTime).format('MMM D, YYYY h:mm A')}` : payload.name
+    return {
+        name,
+        preview: () => {
+            const text = Buffer.from(payload.message.data, 'base64').toString('utf-8')
+            const pretty = JSON.stringify(JSON.parse(text), null, 2)
+                .replaceAll('\\n', '\n')
+            return `<pre>${pretty}</pre>`
+        },
+        value: invalidate ? payload.value : payload
+    }
+}))
 
 if (payload === 'invalidate') {
-    await clearCache()
+    await clearCache(`payloads.${serviceName}.${topic}`)
     notify('Cache invalidated')
     exit()
 }
