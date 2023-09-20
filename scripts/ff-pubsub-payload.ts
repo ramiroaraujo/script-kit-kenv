@@ -170,6 +170,8 @@ const payload = await arg({
     return {
         name,
         preview: () => {
+            const invalidate = payload.type === 'invalidate';
+            if (invalidate) return ''
             const text = Buffer.from(payload.message.data, 'base64').toString('utf-8')
             const pretty = JSON.stringify(JSON.parse(text), null, 2)
                 .replaceAll('\\n', '\n')
