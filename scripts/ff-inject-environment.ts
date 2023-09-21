@@ -107,9 +107,6 @@ for (let [key, value] of Object.entries(envVarsDict)) {
     newConfigLines.push(`${key}=${value}`);
 }
 
-//override GOOGLE_AUTH_AUDIENCE to blank, USE_GOOGLE_S2S_AUTH to false and any _URL ending env to its local form
-
-
 // 8. Write the updated environment variables back to config.env
 let newConfig = newConfigLines.join('\n');
 await writeFile(configPath, newConfig);
