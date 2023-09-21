@@ -62,7 +62,7 @@ if ('USE_GOOGLE_S2S_AUTH' in envVarsDict) {
     envVarsDict['USE_GOOGLE_S2S_AUTH'] = 'false';
 }
 
-const allowedUrls = new Set(['FF_UI_V2_URL', 'JOB_BOARD_UI_URL', 'UI2_BASE_URL']);
+const allowedUrls = new Set(['FF_UI_V2_URL', 'JOB_BOARD_UI_URL', 'UI2_BASE_URL', 'V4_API_URL']);
 let urlTail = '';
 
 for (let [key, value] of Object.entries(envVarsDict)) {
