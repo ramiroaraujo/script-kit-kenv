@@ -75,6 +75,8 @@ do {
 
     if (repo === "invalidate_cache") {
         await clearCache();
+        notify("Cache invalidated")
+        exit()
     }
 } while (repo === "invalidate_cache");
 
