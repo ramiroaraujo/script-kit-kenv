@@ -1,12 +1,9 @@
 // Name: ff repos
 
 import "@johnlindquist/kit";
+import {CacheHelper} from "../lib/cache-helper";
 
-type Repo = {
-    name: string;
-    url: string;
-    git_url: string;
-}
+const db = new CacheHelper().setKey('ff-repos')
 
 const perPage = 10;
 const headers = {
@@ -14,26 +11,9 @@ const headers = {
     Accept: 'application/vnd.github.v3+json'
 };
 
-// ----------------- cache helper ----------------
-let cacheData = await db(`ff-repos`, {content: {}})
-const cache = async (type, expires, invoke: Function) => {
-    if (cacheData.data.content[type]?.data && Date.now() - cacheData.data.content[type]?.expires < expires) {
-        return cacheData.data.content[type].data
-    }
-    const data = await invoke()
-    cacheData.data.content[type] = {expires: Date.now() + expires, data}
-    await cacheData.write()
-    return data
-}
-const clearCache = async () => {
-    cacheData.data.content = {};
-    await cacheData.write();
-}
-// ----------------- cache helper ----------------
-
 const getRepos = async () => {
 
-    const repos = await cache('repos', 1000 * 60 * 60 * 24 * 7, async () => {
+    return await db.cache('repos', async () => {
         const response = await fetch(`https://api.github.com/orgs/FactoryFixInc/repos?per_page=${perPage}`, {headers});
         const linkHeader = response.headers.get('link');
         let results = []
@@ -50,9 +30,7 @@ const getRepos = async () => {
 
         // combine all results
         return [await response.json(), ...results].flat();
-    })
-
-    return repos;
+    }, 1000 * 60 * 60 * 24 * 7);
 }
 
 const getPullRequests = async (repo) => {
@@ -63,22 +41,17 @@ const getPullRequests = async (repo) => {
     return await response.json();
 };
 
-const invalidateCacheOption = {name: "Invalidate cache", value: "invalidate_cache"};
+const repos = await getRepos();
+const repo:any  = await arg("Select a repo to clone or invalidate cache", [
+    ...repos.map((repo) => ({name: repo.name, value: repo})),
+    db.defaultInvalidate,
+]);
 
-let repo;
-do {
-    const repos = await getRepos();
-    repo = await arg("Select a repo to clone or invalidate cache", [
-        ...repos.map((repo) => ({name: repo.name, value: repo})),
-        invalidateCacheOption,
-    ]);
-
-    if (repo === "invalidate_cache") {
-        await clearCache();
-        notify("Cache invalidated")
-        exit()
-    }
-} while (repo === "invalidate_cache");
+if (repo === "invalidate") {
+    await db.clearCache()
+    notify("Cache invalidated")
+    exit()
+}
 
 
 const operation = await arg("Select an operation", [
