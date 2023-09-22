@@ -33,7 +33,7 @@ export class CacheHelper {
         return this;
     }
 
-    async cache(type: string, invoke: Function, expires: number = this.defaultExpires) {
+    async store(type: string, invoke: Function, expires: number = this.defaultExpires) {
         if (!this.isInitialized) {
             await this.init();
         }
@@ -55,7 +55,7 @@ export class CacheHelper {
         }
     }
 
-    async clearCache(path?: string) {
+    async clear(path?: string) {
         if (!this.isInitialized) {
             await this.init();
         }
