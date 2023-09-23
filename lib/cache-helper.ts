@@ -25,7 +25,9 @@ const datePresets = {
     "1w": 604800000,
     "2w": 1209600000,
     "1m": 2592000000,
+    "never": 0,
 }
+
 type DatePresets = typeof datePresets;
 
 export class CacheHelper {
@@ -54,7 +56,7 @@ export class CacheHelper {
         }
 
         const data = this.db.data.content[path];
-        if (data && Date.now() - data.expires < this.defaultExpires) {
+        if (data && (this.defaultExpires === 0 || Date.now() - data.expires < this.defaultExpires)) {
             return data.data;
         }
     }
@@ -64,7 +66,7 @@ export class CacheHelper {
             await this.init();
         }
 
-        this.db.data.content[path] = { expires: Date.now() + expires, data };
+        this.db.data.content[path] = { expires: expires === 0 ? 0 : Date.now() + expires, data };
         await this.db.write();
     }
 
@@ -87,13 +89,13 @@ export class CacheHelper {
         }
 
         if (this.db.data.content[type]?.data &&
-            Date.now() - this.db.data.content[type]?.expires < expires) {
+            (expires === 0 || Date.now() - this.db.data.content[type]?.expires < expires)) {
             return this.db.data.content[type].data;
         }
 
         try {
             const data = await invoke();
-            this.db.data.content[type] = { expires: Date.now() + expires, data };
+            this.db.data.content[type] = { expires: expires === 0 ? 0 : Date.now() + expires, data };
             await this.db.write();
             return data;
         } catch (e) {
