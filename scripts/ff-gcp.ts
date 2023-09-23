@@ -2,6 +2,9 @@
 
 import "@johnlindquist/kit"
 import {CacheHelper} from "../lib/cache-helper";
+import {getEnv} from "../lib/env-helper";
+
+const chromeProfile = getEnv('CHROME_PROFILE', 'No Chrome Profile defined to open links in')
 
 const env = await arg("Choose an environment", [
     "ff-app-dev",
@@ -260,4 +263,4 @@ if (url.type === 'run') {
 }
 
 //open url in chrome in ff profile
-await exec(`open -na "Google Chrome" --args --profile-directory="Profile 1" "${finalUrl}"`)
+await exec(`open -na "Google Chrome" --args --profile-directory="${chromeProfile}" "${finalUrl}"`)
