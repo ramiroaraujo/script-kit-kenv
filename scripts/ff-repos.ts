@@ -77,7 +77,7 @@ switch (operation) {
     case "list_pulls":
         const pullRequests = await getPullRequests(repo);
         if (pullRequests.length === 0) {
-            await notify(`No open pull requests for ${repo.name}`);
+            notify(`No open pull requests for ${repo.name}`);
         } else {
             const selectedPullRequest = await arg(
                 "Select a pull request to open",
@@ -93,10 +93,10 @@ switch (operation) {
         break;
     case 'clone':
         await clipboard.writeText(repo.clone_url);
-        await notify(`Copied ${repo.clone_url} to clipboard`);
+        notify(`Copied ${repo.clone_url} to clipboard`);
         break;
     case "copy_name":
         await clipboard.writeText(repo.name);
-        await notify(`Copied ${repo.name} to clipboard`);
+        notify(`Copied ${repo.name} to clipboard`);
         break;
 }
