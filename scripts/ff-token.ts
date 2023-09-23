@@ -3,8 +3,12 @@
 
 import "@johnlindquist/kit";
 import {CacheHelper} from "../lib/cache-helper";
+import {binPath} from "../lib/bin-helper";
 
 const cache = new CacheHelper('ff-tokens', '1d')
+
+const glcoud = await binPath('gcloud')
+
 //select a project (no prod, no service account impersonation on prod)
 const projects = [
     "ff-app-dev",
@@ -19,7 +23,7 @@ const selectedProject = await arg("Choose a project", projects);
 //select an audience
 const instancesData = await cache.remember(`instances-${selectedProject}`, async () => {
     const cloudRunInstances = await exec(
-        `/opt/homebrew/bin/gcloud run services list --platform=managed --project=${selectedProject} --format="json"`
+        `${glcoud} run services list --platform=managed --project=${selectedProject} --format="json"`
     );
     return JSON.parse(cloudRunInstances.stdout)
 })
@@ -32,7 +36,7 @@ const selectedAudience = await arg("Choose an audience", instances);
 //select a service account
 const serviceAccounts = await cache.remember(`service-accounts-${selectedProject}`, async () => {
     const serviceAccountsData = await exec(
-        `/opt/homebrew/bin/gcloud iam service-accounts list --project=${selectedProject} --format=json`
+        `${glcoud} iam service-accounts list --project=${selectedProject} --format=json`
     );
     return JSON.parse(serviceAccountsData.stdout)
 })
@@ -49,7 +53,7 @@ const selectedServiceAccount = await arg(
 log(selectedProject, selectedAudience, selectedServiceAccount);
 
 const identityToken = await exec(
-    `/opt/homebrew/bin/gcloud auth print-identity-token --impersonate-service-account="${selectedServiceAccount}" --audiences="${selectedAudience}" --project=${selectedProject}`
+    `${glcoud} auth print-identity-token --impersonate-service-account="${selectedServiceAccount}" --audiences="${selectedAudience}" --project=${selectedProject}`
 );
 
 await clipboard.writeText(identityToken.stdout.trim());
