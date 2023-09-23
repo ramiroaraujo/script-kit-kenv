@@ -2,6 +2,7 @@
 // Description: Transform clipboard text based on user-selected options
 
 import "@johnlindquist/kit"
+import {CacheHelper} from "../lib/cache-helper";
 
 const xmlBeautifier = await npm("xml-beautifier");
 
@@ -518,8 +519,13 @@ const runAllTransformations = (all) => {
 
 let clipboardText = await clipboard.readText()
 let operations: { name: string, params: any[] }[] = []
-const cache = await db(`text-manipulation`, {usage: {}, timestamps: {}, last: null, persisted: {}});
-let lastTransformations = cache.last ?? []
+// const cache = await db(`text-manipulation`, {usage: {}, timestamps: {}, last: null, persisted: {}});
+const cache = await (new CacheHelper('text-manipulation', 'never')).init()
+
+let lastTransformations = cache.get('last') ?? []
+const persisted = cache.get('persisted') ?? {}
+const usage = cache.get('usage') ?? {}
+const timestamps = cache.get('timestamps') ?? {}
 
 loop: while (true) {
     let transformation = await arg(
@@ -536,7 +542,7 @@ loop: while (true) {
                 //hide save if no operations yet
                 if (option.value.key === "save" && !operations.length) return null;
 
-                if (option.value.key === "listSaved" && Object.keys(cache.persisted).length === 0) return null;
+                if (option.value.key === "listSaved" && Object.keys(persisted).length === 0) return null;
                 return option;
             })
             .filter(Boolean)
@@ -557,11 +563,11 @@ loop: while (true) {
                 const now = Date.now();
                 const timeDecay = 3600 * 24 * 7 * 1000; // Time decay in milliseconds (e.g., 1 week)
 
-                const aCount = cache.usage[a.value.key] || 0;
-                const bCount = cache.usage[b.value.key] || 0;
+                const aCount = usage[a.value.key] || 0;
+                const bCount = usage[b.value.key] || 0;
 
-                const aTimestamp = cache.timestamps[a.value.key] || now;
-                const bTimestamp = cache.timestamps[b.value.key] || now;
+                const aTimestamp = timestamps[a.value.key] || now;
+                const bTimestamp = timestamps[b.value.key] || now;
 
                 const aDecayedCount = aCount * Math.exp(-(now - aTimestamp) / timeDecay);
                 const bDecayedCount = bCount * Math.exp(-(now - bTimestamp) / timeDecay);
@@ -598,8 +604,8 @@ loop: while (true) {
         case "save":
             const transformationName = await arg("Enter a name for this transformations:");
 
-            cache.persisted[transformations.camelCase(transformationName)] = operations;
-            await cache.write();
+            persisted[transformations.camelCase(transformationName)] = operations;
+            await cache.store('persisted', persisted)
             break loop;
         case "listSaved":
             let flags = {delete: {name: "Delete", shortcut: "cmd+enter",}}
@@ -608,7 +614,7 @@ loop: while (true) {
                     placeholder: "Select a saved transformation to apply:",
                     flags
                 },
-                Object.keys(cache.persisted).map((name) => {
+                Object.keys(persisted).map((name) => {
                     return {
                         name: transformations.reverseCamelCase(name),
                         value: name,
@@ -618,12 +624,12 @@ loop: while (true) {
             if (flag.delete) {
                 let value = await arg("Are you sure you want to delete this transformation?", ['yes', 'no'])
                 if (value === "yes") {
-                    delete cache.persisted[savedTransformationName];
-                    await cache.write();
+                    delete persisted[savedTransformationName];
+                    await cache.store('persisted', persisted)
                     await notify(`Transformation ${savedTransformationName} deleted`);
                 }
             } else {
-                const savedTransformation = cache.persisted[savedTransformationName];
+                const savedTransformation = persisted[savedTransformationName];
                 clipboardText = runAllTransformations(savedTransformation);
                 operations = [...savedTransformation]
                 lastTransformations = [];
@@ -637,14 +643,16 @@ loop: while (true) {
             operations.push({name: result.name, params: [result.paramValue]});
 
             //store usage for sorting
-            cache.usage[transformation.key] = (cache.usage[transformation.key] || 0) + 1;
-            cache.timestamps[transformation.key] = Date.now();
+            usage[transformation.key] = (usage[transformation.key] || 0) + 1;
+            timestamps[transformation.key] = Date.now();
+            await cache.store('usage', usage)
+            await cache.store('timestamps', timestamps)
     }
 }
 
 //store last transformations
-cache.last = operations;
-await cache.write();
+lastTransformations = operations;
+await cache.store('last', lastTransformations)
 
 await clipboard.writeText(clipboardText)
 
