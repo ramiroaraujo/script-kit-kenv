@@ -36,17 +36,6 @@ export class CacheHelper {
 
     constructor(private key?: string, private defaultExpires?: number) { }
 
-    private async init() {
-        this.db = await db(this.key, { content: {} });
-        this.isInitialized = true;
-    }
-
-    private failIfInit() {
-        if (this.isInitialized) {
-            throw new Error("CacheHelper already initialized.");
-        }
-    }
-
     setKey(key: string ) {
         this.failIfInit()
         this.key = key;
@@ -59,7 +48,40 @@ export class CacheHelper {
         return this;
     }
 
-    async store(type: string, invoke: Function, expires: number = this.defaultExpires) {
+    async get(path: string) {
+        if (!this.isInitialized) {
+            await this.init();
+        }
+
+        const data = this.db.data.content[path];
+        if (data && Date.now() - data.expires < this.defaultExpires) {
+            return data.data;
+        }
+    }
+
+    async store(path: string, data: any, expires: number = this.defaultExpires) {
+        if (!this.isInitialized) {
+            await this.init();
+        }
+
+        this.db.data.content[path] = { expires: Date.now() + expires, data };
+        await this.db.write();
+    }
+
+    async clear(path?: string) {
+        if (!this.isInitialized) {
+            await this.init();
+        }
+
+        if (path) {
+            this.db.data.content[path] = undefined;
+        } else {
+            this.db.data.content = {};
+        }
+        await this.db.write();
+    }
+
+    async remember(type: string, invoke: Function, expires: number = this.defaultExpires) {
         if (!this.isInitialized) {
             await this.init();
         }
@@ -81,16 +103,14 @@ export class CacheHelper {
         }
     }
 
-    async clear(path?: string) {
-        if (!this.isInitialized) {
-            await this.init();
-        }
+    private async init() {
+        this.db = await db(this.key, { content: {} });
+        this.isInitialized = true;
+    }
 
-        if (path) {
-            this.db.data.content[path] = undefined;
-        } else {
-            this.db.data.content = {};
+    private failIfInit() {
+        if (this.isInitialized) {
+            throw new Error("CacheHelper already initialized.");
         }
-        await this.db.write();
     }
 }
