@@ -22,10 +22,10 @@ const selectedProject = await arg("Choose a project", projects);
 
 //select an audience
 const instancesData = await cache.remember(`instances-${selectedProject}`, async () => {
-    const cloudRunInstances = await exec(
+    const { stdout:cloudRunInstances } = await exec(
         `${glcoud} run services list --platform=managed --project=${selectedProject} --format="json"`
     );
-    return JSON.parse(cloudRunInstances.stdout)
+    return JSON.parse(cloudRunInstances)
 })
 const instances = instancesData.map((instance) => ({
     name: instance.metadata.name,
@@ -35,10 +35,10 @@ const selectedAudience = await arg("Choose an audience", instances);
 
 //select a service account
 const serviceAccounts = await cache.remember(`service-accounts-${selectedProject}`, async () => {
-    const serviceAccountsData = await exec(
+    const { stdout: serviceAccountsData} = await exec(
         `${glcoud} iam service-accounts list --project=${selectedProject} --format=json`
     );
-    return JSON.parse(serviceAccountsData.stdout)
+    return JSON.parse(serviceAccountsData)
 })
 
 const serviceAccountEmails = serviceAccounts.map((account) => ({
@@ -52,11 +52,11 @@ const selectedServiceAccount = await arg(
 
 log(selectedProject, selectedAudience, selectedServiceAccount);
 
-const identityToken = await exec(
+const { stdout: identityToken } = await exec(
     `${glcoud} auth print-identity-token --impersonate-service-account="${selectedServiceAccount}" --audiences="${selectedAudience}" --project=${selectedProject}`
 );
 
-await clipboard.writeText(identityToken.stdout.trim());
+await clipboard.writeText(identityToken.trim());
 notify({
     title: "Token copied to clipboard",
     message: "Will expire in 1 hour"
