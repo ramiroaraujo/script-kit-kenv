@@ -43,7 +43,6 @@ let basePath = files[0].split('/').slice(0, -1).join('/');
 let filenames = files.map(file => file.split('/').pop().split('.')[0]);
 let extensions = files.map(file => file.split('/').pop().split('.')[1]);
 
-// files = files.map(file => file.split('/').pop().trim());
 let originalFiles = [...filenames];
 
 const handleRenaming = async (filenames, extensions, renaming) => {
@@ -55,7 +54,6 @@ const handleRenaming = async (filenames, extensions, renaming) => {
         },(input) => md(`<pre>${func.apply(null, [filenames, extensions, input]).join('\n')}</pre>`))
         : null;
 
-    debugger;
     return func.apply(null, [filenames, extensions, paramValue]);
 };
 
@@ -102,11 +100,10 @@ while (rerun) {
         operations.push(renaming.key);
 
         filenames = await handleRenaming(filenames, extensions, renaming);
-
     }
 }
 for (let i = 0; i < filenames.length; i++) {
-    await mv(`${basePath}/${originalFiles[i]}`, `${basePath}/${filenames[i]}`);
+    mv(`${basePath}/${originalFiles[i]}.${extensions[i]}`, `${basePath}/${filenames[i]}`);
 }
 
 await notify("Files renamed successfully");
