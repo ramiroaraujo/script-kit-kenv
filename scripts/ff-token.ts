@@ -2,24 +2,9 @@
 // Description: Get a token impersonating a service account for requests to private services
 
 import "@johnlindquist/kit";
+import {CacheHelper} from "../lib/cache-helper";
 
-// ----------------- cache helper ----------------
-let cacheData = await db(`ff-tokens`, {content: {}})
-const cache = async (type, expires, invoke: Function) => {
-    if (cacheData.data.content[type]?.data && Date.now() - cacheData.data.content[type]?.expires < expires) {
-        return cacheData.data.content[type].data
-    }
-    const data = await invoke()
-    cacheData.data.content[type] = {expires: Date.now() + expires, data}
-    await cacheData.write()
-    return data
-}
-const clearCache = async () => {
-    cacheData.data.content = {};
-    await cacheData.write();
-}
-// ----------------- cache helper ----------------
-
+const cache = new CacheHelper('ff-tokens', '1d')
 //select a project (no prod, no service account impersonation on prod)
 const projects = [
     "ff-app-dev",
@@ -32,7 +17,7 @@ const projects = [
 const selectedProject = await arg("Choose a project", projects);
 
 //select an audience
-const instancesData = await cache(`instances-${selectedProject}`, 1000 * 60 * 60 * 24, async () => {
+const instancesData = await cache.remember(`instances-${selectedProject}`, async () => {
     const cloudRunInstances = await exec(
         `/opt/homebrew/bin/gcloud run services list --platform=managed --project=${selectedProject} --format="json"`
     );
@@ -45,12 +30,13 @@ const instances = instancesData.map((instance) => ({
 const selectedAudience = await arg("Choose an audience", instances);
 
 //select a service account
-const serviceAccounts = await cache(`service-accounts-${selectedProject}`, 1000 * 60 * 60 * 24, async () => {
+const serviceAccounts = await cache.remember(`service-accounts-${selectedProject}`, async () => {
     const serviceAccountsData = await exec(
         `/opt/homebrew/bin/gcloud iam service-accounts list --project=${selectedProject} --format=json`
     );
     return JSON.parse(serviceAccountsData.stdout)
 })
+
 const serviceAccountEmails = serviceAccounts.map((account) => ({
     name: account.email,
     value: account.email,
