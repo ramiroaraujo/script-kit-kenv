@@ -1,6 +1,7 @@
 // Name: ff gcp
 
 import "@johnlindquist/kit"
+import {CacheHelper} from "../lib/cache-helper";
 
 const env = await arg("Choose an environment", [
     "ff-app-dev",
@@ -140,23 +141,8 @@ const url = await arg("Choose a url", [
     ]
 )
 
-// ----------------- cache helper ----------------
-let cacheData = await db(`ff-gcp-${env}`, {content: {}})
-let expires = 1000 * 60 * 60 * 24 * 7 // 7 days
-const cache = async (type, expires, invoke: Function) => {
-    if (cacheData.data.content[type]?.data && Date.now() - cacheData.data.content[type]?.expires < expires) {
-        return cacheData.data.content[type].data
-    }
-    const data = await invoke()
-    cacheData.data.content[type] = {expires: Date.now() + expires, data}
-    await cacheData.write()
-    return data
-}
-const clearCache = async () => {
-    cacheData.data.content = {};
-    await cacheData.write();
-}
-// ----------------- cache helper ----------------
+//create cache after the env is selected
+const cache = new CacheHelper(`ff-gcp-${env}`, '1w')
 
 //append env
 let finalUrl = `${url.url}${env}`
@@ -164,7 +150,7 @@ let finalUrl = `${url.url}${env}`
 const openList = {name: 'Open list', value: finalUrl}
 
 if (url.type === 'run') {
-    const data = await cache('run', expires, async () => {
+    const data = await cache.remember('run', async () => {
         const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     })
@@ -177,7 +163,7 @@ if (url.type === 'run') {
     finalUrl = await arg("Choose a Cloud Run instance", [
         openList, ...instances])
 } else if (url.type === 'scheduler') {
-    const data = await cache('scheduler', expires, async () => {
+    const data = await cache.remember('scheduler', async () => {
         const cloudSchedulerInstances = await exec(`/opt/homebrew/bin/gcloud scheduler jobs list --project=${env} --format="json"`)
         return JSON.parse(cloudSchedulerInstances.stdout)
     })
@@ -224,7 +210,7 @@ if (url.type === 'run') {
     }
 
 } else if (url.type === 'storage') {
-    const data = await cache('storage', expires, async () => {
+    const data = await cache.remember('storage', async () => {
         const storageBuckets = await exec(
             `/opt/homebrew/bin/gcloud storage buckets list --project=${env} --format="json"`
         );
@@ -240,7 +226,7 @@ if (url.type === 'run') {
         openList, ...buckets]);
 } else if (url.type === 'secrets') {
 
-    const data = await cache('secrets', expires, async () => {
+    const data = await cache.remember('secrets', async () => {
         const secretsOutput = await exec(
             `/opt/homebrew/bin/gcloud secrets list --project=${env} --format="json"`
         );
@@ -255,7 +241,7 @@ if (url.type === 'run') {
     finalUrl = await arg('Choose a Secret', [
         openList, ...secrets]);
 } else if (url.type === 'logs') {
-    const data = await cache('logs', expires, async () => {
+    const data = await cache.remember('logs', async () => {
         const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     });
@@ -268,7 +254,8 @@ if (url.type === 'run') {
 
     finalUrl = await arg("Choose a Cloud Run instance", [open, ...instances])
 } else if (url.type === 'invalidate') {
-    await clearCache()
+    await cache.clear()
+    notify('Cache cleared')
     exit();
 }
 
