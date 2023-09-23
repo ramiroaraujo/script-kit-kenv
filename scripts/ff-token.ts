@@ -53,7 +53,7 @@ const identityToken = await exec(
 );
 
 await clipboard.writeText(identityToken.stdout.trim());
-await notify({
+notify({
     title: "Token copied to clipboard",
     message: "Will expire in 1 hour"
 });
