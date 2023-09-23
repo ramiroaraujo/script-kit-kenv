@@ -19,24 +19,26 @@ const env = await arg("Choose an environment", [
     'ff-app-e2e',
 ])
 
+const cloudUrl = 'https://console.cloud.google.com'
+
 //select from the urls list
 const url = await arg("Choose a url", [
         {
             name: 'Cloud Run', value: {
-                url: 'https://console.cloud.google.com/run?project=',
+                url: `${cloudUrl}/run?project=`,
                 type: 'run'
             }
         },
         {
             name: 'Cloud Scheduler', value: {
-                url: 'https://console.cloud.google.com/cloudscheduler?project=',
+                url: `${cloudUrl}/cloudscheduler?project=`,
                 type: 'scheduler'
             }
         },
         {
             name: 'Firestore', value: {
-                url: 'https://console.cloud.google.com/firestore/databases/-default-?project=',
-                query: 'https://console.cloud.google.com/firestore/databases/-default-?project=',
+                url: `${cloudUrl}/firestore/databases/-default-?project=`,
+                query: `${cloudUrl}/firestore/databases/-default-?project=`,
                 type: 'firestore',
                 // hardcoded since we don't have a way to get the collections from the cli
                 collections: [
@@ -111,31 +113,31 @@ const url = await arg("Choose a url", [
         },
         {
             name: 'Logs', value: {
-                url: 'https://console.cloud.google.com/logs/query?project=',
+                url: `${cloudUrl}/logs/query?project=`,
                 type: 'logs'
             }
         },
         {
             name: 'Errors', value: {
-                url: 'https://console.cloud.google.com/errors?project=',
+                url: `${cloudUrl}/errors?project=`,
                 type: null
             }
         },
         {
             name: 'Storage', value: {
-                url: 'https://console.cloud.google.com/storage/browser?project=',
+                url: `${cloudUrl}/storage/browser?project=`,
                 type: 'storage'
             }
         },
         {
             name: 'Secret Manager', value: {
-                url: 'https://console.cloud.google.com/security/secret-manager?project=',
+                url: `${cloudUrl}/security/secret-manager?project=`,
                 type: 'secrets'
             }
         },
         {
             name: 'IAM service accounts', value: {
-                url: 'https://console.cloud.google.com/iam-admin/serviceaccounts?project=',
+                url: `${cloudUrl}/iam-admin/serviceaccounts?project=`,
                 type: null
             }
         },
@@ -163,7 +165,7 @@ if (url.type === 'run') {
 
     const instances = data.map(instance => ({
         name: `Open service ${instance.metadata.name}`,
-        value: `https://console.cloud.google.com/run/detail/${instance.metadata.labels['cloud.googleapis.com/location']}/${instance.metadata.name}/metrics?project=${env}`,
+        value: `${cloudUrl}/run/detail/${instance.metadata.labels['cloud.googleapis.com/location']}/${instance.metadata.name}/metrics?project=${env}`,
     }))
 
     finalUrl = await arg("Choose a Cloud Run instance", [
@@ -190,8 +192,8 @@ if (url.type === 'run') {
     const collections = url.collections.map(collection => ({
         name: `Open collection ${collection}`,
         value: {
-            url: `https://console.cloud.google.com/firestore/databases/-default-/data/panel/${collection}?project=${env}`,
-            query: `https://console.cloud.google.com/firestore/databases/-default-/data/query;collection=%2F${collection}?project=${env}`
+            url: `${cloudUrl}/firestore/databases/-default-/data/panel/${collection}?project=${env}`,
+            query: `${cloudUrl}/firestore/databases/-default-/data/query;collection=%2F${collection}?project=${env}`
         }
     }))
     let flags = {
@@ -225,7 +227,7 @@ if (url.type === 'run') {
 
     const buckets = data.map(bucket => ({
         name: `Open bucket ${bucket.name}`,
-        value: `https://console.cloud.google.com/storage/browser/${bucket.name}?project=${env}`,
+        value: `${cloudUrl}/storage/browser/${bucket.name}?project=${env}`,
     }));
 
     finalUrl = await arg('Choose a Storage bucket', [
@@ -241,7 +243,7 @@ if (url.type === 'run') {
 
     const secrets = data.map(secret => ({
         name: `Open secret ${secret.name.split('/').pop()}`,
-        value: `https://console.cloud.google.com/security/secret-manager/secret/${secret.name.split('/').pop()}?project=${env}`,
+        value: `${cloudUrl}/security/secret-manager/secret/${secret.name.split('/').pop()}?project=${env}`,
     }));
 
     finalUrl = await arg('Choose a Secret', [
@@ -254,7 +256,7 @@ if (url.type === 'run') {
 
     const instances = data.map(instance => ({
         name: `Filter by service name ${instance.metadata.name}`,
-        value: `https://console.cloud.google.com/logs/query;query=resource.labels.service_name%3D%22${instance.metadata.name}%22;summaryFields=:false:32:beginning?project=${env}`,
+        value: `${cloudUrl}/logs/query;query=resource.labels.service_name%3D%22${instance.metadata.name}%22;summaryFields=:false:32:beginning?project=${env}`,
     }))
     const open = {name: 'Open', value: finalUrl}
 
