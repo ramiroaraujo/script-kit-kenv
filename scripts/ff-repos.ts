@@ -2,12 +2,17 @@
 
 import "@johnlindquist/kit";
 import {CacheHelper} from "../lib/cache-helper";
+import {getEnv} from "../lib/env-helper";
 
 const cache = new CacheHelper().setKey('ff-repos').setDefaultExpires('1h')
 
 const perPage = 10;
+
+const env = getEnv('GITHUB_TOKEN')
+const chromeProfile = getEnv('CHROME_PROFILE', 'No Chrome Profile defined to open links in')
+
 const headers = {
-    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+    Authorization: `Bearer ${env}`,
     Accept: 'application/vnd.github.v3+json'
 };
 
@@ -64,10 +69,10 @@ const operation = await arg("Select an operation", [
 
 switch (operation) {
     case 'open':
-        await exec(`open -na "Google Chrome" --args --profile-directory="Profile 1" "${repo.html_url}"`)
+        await exec(`open -na "Google Chrome" --args --profile-directory="${chromeProfile}" "${repo.html_url}"`)
         break;
     case 'pull':
-        await exec(`open -na "Google Chrome" --args --profile-directory="Profile 1" "${repo.html_url}/pulls"`)
+        await exec(`open -na "Google Chrome" --args --profile-directory="${chromeProfile}" "${repo.html_url}/pulls"`)
         break;
     case "list_pulls":
         const pullRequests = await getPullRequests(repo);
@@ -82,7 +87,7 @@ switch (operation) {
                 }))
             );
             await exec(
-                `open -na "Google Chrome" --args --profile-directory="Profile 1" "${selectedPullRequest}"`
+                `open -na "Google Chrome" --args --profile-directory="${chromeProfile}" "${selectedPullRequest}"`
             );
         }
         break;
