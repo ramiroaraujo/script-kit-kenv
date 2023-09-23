@@ -3,7 +3,7 @@
 import "@johnlindquist/kit";
 import {CacheHelper} from "../lib/cache-helper";
 
-const db = new CacheHelper().setKey('ff-repos')
+const cache = new CacheHelper().setKey('ff-repos').setDefaultExpires('1h')
 
 const perPage = 10;
 const headers = {
@@ -13,7 +13,7 @@ const headers = {
 
 const getRepos = async () => {
 
-    return await db.cache('repos', async () => {
+    return await cache.remember('repos', async () => {
         const response = await fetch(`https://api.github.com/orgs/FactoryFixInc/repos?per_page=${perPage}`, {headers});
         const linkHeader = response.headers.get('link');
         let results = []
@@ -30,7 +30,7 @@ const getRepos = async () => {
 
         // combine all results
         return [await response.json(), ...results].flat();
-    }, 1000 * 60 * 60 * 24 * 7);
+    });
 }
 
 const getPullRequests = async (repo) => {
@@ -44,11 +44,11 @@ const getPullRequests = async (repo) => {
 const repos = await getRepos();
 const repo:any  = await arg("Select a repo to clone or invalidate cache", [
     ...repos.map((repo) => ({name: repo.name, value: repo})),
-    db.defaultInvalidate,
+    cache.defaultInvalidate,
 ]);
 
 if (repo === "invalidate") {
-    await db.clearCache()
+    await cache.clear()
     notify("Cache invalidated")
     exit()
 }
