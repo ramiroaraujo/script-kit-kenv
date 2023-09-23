@@ -3,6 +3,9 @@
 import "@johnlindquist/kit"
 import {CacheHelper} from "../lib/cache-helper";
 import {getEnv} from "../lib/env-helper";
+import {binPath} from "../lib/bin-helper";
+
+const gcloud = await binPath('gcloud')
 
 const chromeProfile = getEnv('CHROME_PROFILE', 'No Chrome Profile defined to open links in')
 
@@ -154,7 +157,7 @@ const openList = {name: 'Open list', value: finalUrl}
 
 if (url.type === 'run') {
     const data = await cache.remember('run', async () => {
-        const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
+        const cloudRunInstances = await exec(`${gcloud} run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     })
 
@@ -167,7 +170,7 @@ if (url.type === 'run') {
         openList, ...instances])
 } else if (url.type === 'scheduler') {
     const data = await cache.remember('scheduler', async () => {
-        const cloudSchedulerInstances = await exec(`/opt/homebrew/bin/gcloud scheduler jobs list --project=${env} --format="json"`)
+        const cloudSchedulerInstances = await exec(`${gcloud} scheduler jobs list --project=${env} --format="json"`)
         return JSON.parse(cloudSchedulerInstances.stdout)
     })
 
@@ -215,7 +218,7 @@ if (url.type === 'run') {
 } else if (url.type === 'storage') {
     const data = await cache.remember('storage', async () => {
         const storageBuckets = await exec(
-            `/opt/homebrew/bin/gcloud storage buckets list --project=${env} --format="json"`
+            `${gcloud} storage buckets list --project=${env} --format="json"`
         );
         return JSON.parse(storageBuckets.stdout)
     })
@@ -231,7 +234,7 @@ if (url.type === 'run') {
 
     const data = await cache.remember('secrets', async () => {
         const secretsOutput = await exec(
-            `/opt/homebrew/bin/gcloud secrets list --project=${env} --format="json"`
+            `${gcloud} secrets list --project=${env} --format="json"`
         );
         return JSON.parse(secretsOutput.stdout);
     })
@@ -245,7 +248,7 @@ if (url.type === 'run') {
         openList, ...secrets]);
 } else if (url.type === 'logs') {
     const data = await cache.remember('logs', async () => {
-        const cloudRunInstances = await exec(`/opt/homebrew/bin/gcloud run services list --platform=managed --project=${env} --format="json"`)
+        const cloudRunInstances = await exec(`${gcloud} run services list --platform=managed --project=${env} --format="json"`)
         return JSON.parse(cloudRunInstances.stdout)
     });
 
