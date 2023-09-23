@@ -4,7 +4,7 @@ import "@johnlindquist/kit";
 import {CacheHelper} from "../lib/cache-helper";
 import {getEnv} from "../lib/env-helper";
 
-const cache = new CacheHelper().setKey('ff-repos').setDefaultExpires('1h')
+const cache = new CacheHelper('ff-repos', '1h');
 
 const perPage = 10;
 
