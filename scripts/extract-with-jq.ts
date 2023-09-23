@@ -1,17 +1,17 @@
 // Name: Extract with jq
 
 import "@johnlindquist/kit";
+import {binPath} from "../lib/bin-helper";
 
 // Fetch clipboard content
 const content = await clipboard.readText();
 
+const jq = await binPath('jq')
+
 const transform = async (text: string, query: string): Promise<string> => {
-    let response = await exec(`jq ${query}`, {
+    let response = await exec(`${jq} ${query}`, {
         reject: false,
         input: text,
-        env: {
-            PATH: `${env.PATH}:/opt/homebrew/bin`,
-        },
     });
     if (response.failed) {
         throw new Error('invalid query');
