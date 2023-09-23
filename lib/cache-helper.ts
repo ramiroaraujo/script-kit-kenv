@@ -34,11 +34,14 @@ export class CacheHelper {
 
     private db: DBHelper;
     private isInitialized = false;
+    private defaultExpires: number;
     public readonly defaultInvalidate = { name: "Invalidate Cache", value: "invalidate" };
 
-    constructor(private key?: string, private defaultExpires?: number) { }
+    constructor(private key?: string, defaultExpires?:number | keyof DatePresets) {
+        this.setDefaultExpires(defaultExpires)
+    }
 
-    setKey(key: string ) {
+    setKey(key: string) {
         this.failIfInit()
         this.key = key;
         return this;
@@ -50,11 +53,13 @@ export class CacheHelper {
         return this;
     }
 
-    async get(path: string) {
-        if (!this.isInitialized) {
-            await this.init();
-        }
+    async init() {
+        this.db = await db(this.key, { content: {} });
+        this.isInitialized = true;
+        return this;
+    }
 
+    get(path: string) {
         const data = this.db.data.content[path];
         if (data && (this.defaultExpires === 0 || Date.now() - data.expires < this.defaultExpires)) {
             return data.data;
@@ -103,11 +108,6 @@ export class CacheHelper {
             notify(e.message);
             exit();
         }
-    }
-
-    private async init() {
-        this.db = await db(this.key, { content: {} });
-        this.isInitialized = true;
     }
 
     private failIfInit() {
