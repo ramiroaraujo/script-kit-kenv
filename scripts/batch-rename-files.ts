@@ -2,6 +2,7 @@
 // Description: Rename all selected files in a batch
 
 import "@johnlindquist/kit";
+import {CacheHelper} from "../lib/cache-helper";
 
 const renamings = {
     prepend: (filenames, extensions, prefix) => filenames.map((file, i) => `${prefix}${file}.${extensions[i]}`),
@@ -51,7 +52,15 @@ const handleRenaming = async (filenames, extensions, renaming) => {
     let paramValue = parameter
         ? await arg({
             input: parameter.defaultValue,
-        },(input) => md(`<pre>${func.apply(null, [filenames, extensions, input]).join('\n')}</pre>`))
+        },(input) => {
+            try {
+                return md(`<pre>${func.apply(null, [filenames, extensions, input]).join('\n')}</pre>`);
+            } catch (e) {
+                return md(`<pre>${filenames.join('\n')}</pre>`)
+            }
+
+
+        })
         : null;
 
     return func.apply(null, [filenames, extensions, paramValue]);
@@ -59,7 +68,9 @@ const handleRenaming = async (filenames, extensions, renaming) => {
 
 let operations = [];
 let rerun = true;
-const cache = await db(`batch-file-rename`, { usage: {} });
+const cache = new CacheHelper('batch-rename-files', 'never')
+await cache.init();
+const usage = cache.get('usage') ?? {}
 
 while (rerun) {
     let renaming = await arg(
@@ -72,8 +83,8 @@ while (rerun) {
                 if (a.value.key === "finish") return -1;
                 if (b.value.key === "finish") return 1;
 
-                const aCount = cache.usage[a.value.key] || 0;
-                const bCount = cache.usage[b.value.key] || 0;
+                const aCount = usage[a.value.key] || 0;
+                const bCount = usage[b.value.key] || 0;
                 return bCount - aCount;
             })
             .map(option => {
@@ -81,8 +92,11 @@ while (rerun) {
                     ...option,
                     preview: () => {
                         try {
+                            //@todo fix first operation rendering
                             if (option.value.parameter) throw ''
-                            const renamedFiles = renamings[option.value.key](filenames);
+                            const func = renamings[option.value.key]
+                            const renamedFiles = func.apply(null, [filenames, extensions]);
+                            debugger;
                             return md(`<pre>${renamedFiles.join('\n')}</pre>`)
                         } catch (e) {
                             return md(`<pre>${filenames.join('\n')}</pre>`)
@@ -95,8 +109,8 @@ while (rerun) {
     if (renaming.key === "finish") {
         rerun = false;
     } else {
-        cache.usage[renaming.key] = (cache.usage[renaming.key] || 0) + 1;
-        await cache.write();
+        usage[renaming.key] = (usage[renaming.key] || 0) + 1;
+        await cache.store('usage', usage)
         operations.push(renaming.key);
 
         filenames = await handleRenaming(filenames, extensions, renaming);
