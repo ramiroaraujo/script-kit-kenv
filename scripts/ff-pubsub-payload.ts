@@ -1,8 +1,11 @@
 // Name: ff pubsub payload
 
 import "@johnlindquist/kit"
+import {CacheHelper, expirePresets} from "../lib/cache-helper";
 
 const dayjs = await npm('dayjs')
+
+const cache = new CacheHelper()
 
 // choose env
 const env = await arg("Choose an environment", [
@@ -15,35 +18,8 @@ const env = await arg("Choose an environment", [
     'ff-app-e2e',
 ])
 
-// ----------------- cache helper ----------------
-let cacheData = await db(`ff-pubsub-payload-${env}`, {content: {}})
-let expire30days = 1000 * 60 * 60 * 24 * 30
-let expire1day = 1000 * 60 * 60 * 24 * 1
-const cache = async (type, expires, invoke: Function) => {
-    if (cacheData.data.content[type]?.data && Date.now() - cacheData.data.content[type]?.expires < expires) {
-        return cacheData.data.content[type].data
-    }
-    try {
-        const data = await invoke()
-        cacheData.data.content[type] = {expires: Date.now() + expires, data}
-        await cacheData.write()
-        return data
-    } catch (e) {
-        notify(e.message)
-        exit()
-    }
-}
-const clearCache = async (path?: string) => {
-    if (path) {
-        cacheData.data.content[path] = undefined;
-    } else {
-        cacheData.data.content = {};
-    }
-    await cacheData.write();
-}
-
-const invalidate = {name: 'Invalidate cache', type: 'invalidate', value: 'invalidate'}
-// ----------------- cache helper ----------------
+cache.setKey(`ff-pubsub-payload-${env}`).setDefaultExpires('1m')
+await cache.init()
 
 // select type of operation
 let serviceName = ''
@@ -75,14 +51,14 @@ if (operationType === 'service') {
     }, folders);
 
     const path = home(`FactoryFix/${folder}`)
-//extract service name, then service url
+    //extract service name, then service url
     const tfvarsPath = `${path}/deployment/terraform/terraform.tfvars`
     let tfVars = await readFile(tfvarsPath, 'utf-8');
     const serviceNameMatch = tfVars.match(/^service_name\s*=\s*"([^"]+)"/m);
     serviceName = serviceNameMatch[1];
 
 //cache topics for 30 days
-    const topics: any[] = await cache(`topics.${serviceName}`, expire30days, async () => {
+    const topics: any[] = await cache.remember(`topics.${serviceName}`, async () => {
         const serviceUrl = (await exec(`/opt/homebrew/bin/gcloud run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
 
         //list pubsub topics for the service url
@@ -95,21 +71,21 @@ if (operationType === 'service') {
         return topics
     })
 
-    topic = await arg('Choose a topic', [...topics, invalidate].map(topic => {
-        const invalidate = topic.type === 'invalidate';
+    topic = await arg('Choose a topic', [...topics, cache.defaultInvalidate].map(topic => {
+        const invalidate = topic.value === 'invalidate';
         return ({
             name: !invalidate ? topic.topic?.split('/').pop() : topic.name,
             value: !invalidate ? topic.name : topic.value
         });
     }))
     if (topic === 'invalidate') {
-        await clearCache(`topics.${serviceName}`)
+        await cache.clear(`topics.${serviceName}`)
         notify('Cache invalidated')
         exit()
     }
 } else if (operationType === 'topic') {
     //list all topics and prompt to select one
-    const topics:any[] = await cache(`topics`, expire30days, async () => {
+    const topics:any[] = await cache.remember(`topics`, async () => {
         const { stdout: reponse } = await exec(`/opt/homebrew/bin/gcloud pubsub subscriptions list --project=${env} --format=json`)
         const subscriptions = JSON.parse(reponse)
         const topics = subscriptions
@@ -132,9 +108,9 @@ if (operationType === 'service') {
         return topics
     })
 
-    const selectedTopic:any = await arg('Choose a topic', [...topics, invalidate])
+    const selectedTopic:any = await arg('Choose a topic', [...topics, cache.defaultInvalidate])
     if (selectedTopic === 'invalidate') {
-        await clearCache(`topics`)
+        await cache.clear(`topics`)
         notify('Cache invalidated')
         exit()
     }
@@ -143,7 +119,7 @@ if (operationType === 'service') {
 }
 
 //cache payloads for a day
-let payloads: any[] = await cache(`payloads.${serviceName}.${topic}`, expire1day, async () => {
+let payloads: any[] = await cache.remember(`payloads.${serviceName}.${topic}`, async () => {
     let payloads = []
     const dateUnits = ['week', 'day', 'hour', 'minute']
     let length = 10
@@ -158,19 +134,20 @@ let payloads: any[] = await cache(`payloads.${serviceName}.${topic}`, expire1day
     }
 
     return payloads
-})
+}, expirePresets["1d"])
 
 log('before payload')
 
 const payload = await arg({
     placeholder: 'Choose a payload',
-}, [invalidate, ...payloads].map(payload => {
-    const invalidate = payload.type === 'invalidate';
+}, [cache.defaultInvalidate, ...payloads].map(payload => {
+    const invalidate = payload.value === 'invalidate';
+    debugger;
     const name = !invalidate ? `From ${dayjs(payload.message.publishTime).format('MMM D, YYYY h:mm A')}` : payload.name
     return {
         name,
         preview: () => {
-            const invalidate = payload.type === 'invalidate';
+            const invalidate = payload.value === 'invalidate';
             if (invalidate) return ''
             const text = Buffer.from(payload.message.data, 'base64').toString('utf-8')
             const pretty = JSON.stringify(JSON.parse(text), null, 2)
@@ -182,7 +159,7 @@ const payload = await arg({
 }))
 
 if (payload === 'invalidate') {
-    await clearCache(`payloads.${serviceName}.${topic}`)
+    await cache.clear(`payloads.${serviceName}.${topic}`)
     notify('Cache invalidated')
     exit()
 }
