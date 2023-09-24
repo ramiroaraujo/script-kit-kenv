@@ -2,7 +2,7 @@ import {DB} from "../../../../.kit/types/kit";
 
 type DBHelper = ReturnType<DB> extends Promise<infer T> ? T : never;
 
-const datePresets = {
+export const expirePresets = {
     "1min": 60000,
     "1h": 3600000,
     "2h": 7200000,
@@ -28,7 +28,7 @@ const datePresets = {
     "never": 0,
 }
 
-type DatePresets = typeof datePresets;
+type DatePresets = typeof expirePresets;
 
 export class CacheHelper {
 
@@ -49,7 +49,7 @@ export class CacheHelper {
 
     setDefaultExpires(defaultExpires: number | keyof DatePresets) {
         this.failIfInit()
-        this.defaultExpires = typeof defaultExpires === 'number' ? defaultExpires : datePresets[defaultExpires];
+        this.defaultExpires = typeof defaultExpires === 'number' ? defaultExpires : expirePresets[defaultExpires];
         return this;
     }
 
