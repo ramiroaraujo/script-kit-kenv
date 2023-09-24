@@ -519,7 +519,6 @@ const runAllTransformations = (all) => {
 
 let clipboardText = await clipboard.readText()
 let operations: { name: string, params: any[] }[] = []
-// const cache = await db(`text-manipulation`, {usage: {}, timestamps: {}, last: null, persisted: {}});
 const cache = await (new CacheHelper('text-manipulation', 'never')).init()
 
 let lastTransformations = cache.get('last') ?? []
