@@ -21,6 +21,6 @@ export const binPath = async (binName: string) => {
         }
     }
     const error = `Could not find ${binName} in PATH`;
-    notify({title: error, message: 'Add or update the PATH in Kit .env'})
+    notify({title: error, message: 'Install it, or add/update the PATH in Kit .env'})
     throw new Error(error)
 }
