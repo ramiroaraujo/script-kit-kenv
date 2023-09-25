@@ -3,6 +3,8 @@
 import "@johnlindquist/kit"
 import {CacheHelper, expirePresets} from "../lib/cache-helper";
 import {binPath} from "../lib/bin-helper";
+import {getFFLocalServices, selectEnv} from "../lib/ff-helper";
+import {FFService} from "../lib/ff-service";
 
 const dayjs = await npm('dayjs')
 
@@ -13,15 +15,7 @@ const date = await binPath('gdate')
 const cache = new CacheHelper()
 
 // choose env
-const env = await arg("Choose an environment", [
-    "ff-app-dev",
-    'ff-app-prod',
-    'ff-app-iso-1',
-    'ff-app-iso-2',
-    'ff-app-iso-3',
-    'ff-app-iso-4',
-    'ff-app-e2e',
-])
+const env = await selectEnv();
 
 cache.setKey(`ff-pubsub-payload-${env}`).setDefaultExpires('1m')
 await cache.init()
@@ -36,39 +30,19 @@ const operationType = await arg('How do you want to search for a PubSub?', [
 ])
 
 if (operationType === 'service') {
-    //choose folder / service
-    const allFolders = (await exec(`cd ~/FactoryFix && ls -d */`)).all.split('\n').map(folder => folder.replace('/', ''));
-    const validFolders = allFolders.map(async folder => {
-        try {
-            let path = home(`FactoryFix/${folder}/package.json`);
-            const file = await readFile(path, 'utf-8');
-            const packageJson = JSON.parse(file);
+    const folders = await getFFLocalServices();
+    const folder = await arg("Select a folder to inject the environment", folders);
 
-            return packageJson.dependencies['@nestjs/core'] ? folder : null;
-        } catch (e) {
-            return null;
-        }
-    });
+    const service = await FFService.init(folder);
+    serviceName = await service.getServiceName();
 
-    const folders = (await Promise.all(validFolders)).filter(Boolean);
-    const folder = await arg({
-        placeholder: "Select a folder to inject the debug config",
-    }, folders);
-
-    const path = home(`FactoryFix/${folder}`)
-    //extract service name, then service url
-    const tfvarsPath = `${path}/deployment/terraform/terraform.tfvars`
-    let tfVars = await readFile(tfvarsPath, 'utf-8');
-    const serviceNameMatch = tfVars.match(/^service_name\s*=\s*"([^"]+)"/m);
-    serviceName = serviceNameMatch[1];
-
-//cache topics for 30 days
+    //cache topics for 30 days
     const topics: any[] = await cache.remember(`topics.${serviceName}`, async () => {
         const serviceUrl = (await exec(`${gcloud} run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
 
         //list pubsub topics for the service url
-        let subscriptions = await exec(`${gcloud} pubsub subscriptions list --project=${env} --format=json | ${jq} "[.[] | select(.pushConfig.oidcToken.audience == \\"${serviceUrl}\\")]"`);
-        const topics = JSON.parse(subscriptions.stdout)
+        const { stdout: subscriptions} = await exec(`${gcloud} pubsub subscriptions list --project=${env} --format=json | ${jq} "[.[] | select(.pushConfig.oidcToken.audience == \\"${serviceUrl}\\")]"`);
+        const topics = JSON.parse(subscriptions)
 
         if (!topics.length) {
             throw new Error(`No topics found for ${serviceUrl}`)
