@@ -72,7 +72,7 @@ if (action === "Merge") {
     })
     const mergedText = await getMergedClipboards(count, separator);
     await writeMergedClipboards(mergedText);
-    await notify("Merged clipboard items and copied to clipboard");
+    notify("Merged clipboard items and copied to clipboard");
 
 } else if (action === "Split") {
     // const separator = await arg("Enter the separator for splitting");
@@ -86,7 +86,7 @@ if (action === "Merge") {
     const trim = await arg("Trim clipboard content?", ["Yes", "No"]);
     const splitText = await getSplitClipboard(separator, trim === "Yes");
     await writeSplitClipboard(splitText);
-    await notify("Split clipboard content and stored in Alfred clipboard");
+    notify("Split clipboard content and stored in Alfred clipboard");
 }
 
 db.close();

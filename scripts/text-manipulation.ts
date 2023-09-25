@@ -625,7 +625,7 @@ loop: while (true) {
                 if (value === "yes") {
                     delete persisted[savedTransformationName];
                     await cache.store('persisted', persisted)
-                    await notify(`Transformation ${savedTransformationName} deleted`);
+                    notify(`Transformation ${savedTransformationName} deleted`);
                 }
             } else {
                 const savedTransformation = persisted[savedTransformationName];

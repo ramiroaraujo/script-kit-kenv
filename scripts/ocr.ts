@@ -69,9 +69,9 @@ const text = await recognizeText(filePath, selectedLanguage);
 
 if (text) {
     await clipboard.writeText(text.trim());
-    await notify("Text recognized and copied to clipboard");
+    notify("Text recognized and copied to clipboard");
 } else {
-    await notify("No text found in the screenshot");
+    notify("No text found in the screenshot");
 }
 
 // Clean up temporary file
