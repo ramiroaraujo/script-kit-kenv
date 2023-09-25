@@ -23,6 +23,7 @@ const transform = async (text: string, query: string): Promise<string> => {
 };
 
 // Prompt for a jq transform
+let lastValidQuery = '';
 const query = await arg(
   {
     placeholder: 'Enter a jq transform:',
@@ -32,10 +33,14 @@ const query = await arg(
   async (input) => {
     try {
       const result = await transform(content, input);
+      lastValidQuery = input;
       return md(`<pre style="margin-top: 0">${result}</pre>`);
     } catch (e) {
-      if (e.message === 'null') return md(`_null results_\n<pre>${content}</pre>`);
-      else return md(`_Invalid query_\n<pre>${content}</pre>`);
+      let lastValid = '';
+      if (lastValidQuery) lastValid = await transform(content, lastValidQuery);
+
+      if (e.message === 'null') return md(`_null results_\n<pre>${lastValid || content}</pre>`);
+      else return md(`_Invalid query_\n<pre>${lastValid || content}</pre>`);
     }
   },
 );
