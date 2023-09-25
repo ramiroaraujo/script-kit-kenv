@@ -1,7 +1,9 @@
 import {getFFPath} from "./ff-helper";
 import * as dotenv from "dotenv";
+import * as yaml from "yaml";
 
 await npm('jsonwebtoken')
+await npm('yaml')
 
 export class FFService {
 
@@ -48,5 +50,10 @@ export class FFService {
         const config = await readFile(home(`${this.path}/config.env`), 'utf-8');
         return dotenv.parse<Record<string, string>>(config)
     }
-
+    async getTestEnvs(): Promise<Record<string, string>> {
+        const testDockerFile = `${this.path}/deployment/test/docker-compose.test.yml`
+        const content = await readFile(testDockerFile, 'utf-8')
+        const config = yaml.parse(content)
+        return config.services.sut.environment;
+    }
 }
