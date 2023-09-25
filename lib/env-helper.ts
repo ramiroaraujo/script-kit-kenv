@@ -8,3 +8,7 @@ export const getEnv = (key: string, errorMessage?:string) => {
     }
     return env
 }
+
+export const hasEnv = (key: string) => {
+    return Object.hasOwn(process.env, key)
+}
