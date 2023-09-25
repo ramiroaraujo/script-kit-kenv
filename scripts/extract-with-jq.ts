@@ -1,43 +1,44 @@
 // Name: Extract with jq
 
-import "@johnlindquist/kit";
-import {binPath} from "../lib/bin-helper";
+import '@johnlindquist/kit';
+import { binPath } from '../lib/bin-helper';
 
 // Fetch clipboard content
 const content = await clipboard.readText();
 
-const jq = await binPath('jq')
+const jq = await binPath('jq');
 
 const transform = async (text: string, query: string): Promise<string> => {
-    const {stdout, failed} = await exec(`${jq} ${query}`, {
-        reject: false,
-        input: text,
-    });
-    if (failed) {
-        throw new Error('invalid query');
-    }
-    if (stdout.trim() === 'null') {
-        throw new Error('null');
-    }
-    return stdout;
-}
+  const { stdout, failed } = await exec(`${jq} ${query}`, {
+    reject: false,
+    input: text,
+  });
+  if (failed) {
+    throw new Error('invalid query');
+  }
+  if (stdout.trim() === 'null') {
+    throw new Error('null');
+  }
+  return stdout;
+};
 
 // Prompt for a jq transform
-const query = await arg({
-    placeholder: "Enter a jq transform:",
+const query = await arg(
+  {
+    placeholder: 'Enter a jq transform:',
     ignoreBlur: true,
     input: '.',
-}, async (input) => {
+  },
+  async (input) => {
     try {
-        const result = await transform(content, input);
-        return md(`<pre style="margin-top: 0">${result}</pre>`);
+      const result = await transform(content, input);
+      return md(`<pre style="margin-top: 0">${result}</pre>`);
     } catch (e) {
-        if (e.message === 'null')
-            return md(`_null results_\n<pre>${content}</pre>`);
-        else
-            return md(`_Invalid query_\n<pre>${content}</pre>`);
+      if (e.message === 'null') return md(`_null results_\n<pre>${content}</pre>`);
+      else return md(`_Invalid query_\n<pre>${content}</pre>`);
     }
-});
+  },
+);
 
 // Apply the jq transformation
 const extract = await transform(content, query);

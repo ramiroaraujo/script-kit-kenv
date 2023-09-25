@@ -2,13 +2,13 @@
 // Description: Get the content of the clipboard and "keystroke" it without pasting
 // Shortcut: ctrl+cmd+alt+shift+v
 
-import "@johnlindquist/kit"
+import '@johnlindquist/kit';
 
-const clipboardText = await clipboard.readText()
+const clipboardText = await clipboard.readText();
 
 if (clipboardText.length > 1000) {
-    notify("Clipboard content is too long")
-    exit()
+  notify('Clipboard content is too long');
+  exit();
 }
 
 await applescript(String.raw`
@@ -17,4 +17,4 @@ await applescript(String.raw`
         delay 0.1
         keystroke (get the clipboard)
     end tell
-`)
+`);
