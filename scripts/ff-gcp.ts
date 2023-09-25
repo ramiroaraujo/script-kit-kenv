@@ -4,20 +4,13 @@ import "@johnlindquist/kit"
 import {CacheHelper} from "../lib/cache-helper";
 import {getEnv} from "../lib/env-helper";
 import {binPath} from "../lib/bin-helper";
+import {selectEnv} from "../lib/ff-helper";
 
 const gcloud = await binPath('gcloud')
 
 const chromeProfile = getEnv('CHROME_PROFILE', 'No Chrome Profile defined to open links in')
 
-const env = await arg("Choose an environment", [
-    "ff-app-dev",
-    'ff-app-prod',
-    'ff-app-iso-1',
-    'ff-app-iso-2',
-    'ff-app-iso-3',
-    'ff-app-iso-4',
-    'ff-app-e2e',
-])
+const env = await selectEnv()
 
 const cloudUrl = 'https://console.cloud.google.com'
 
