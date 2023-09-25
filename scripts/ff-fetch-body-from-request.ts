@@ -200,8 +200,32 @@ if (!debugLog?.jsonPayload?.body) {
   exit();
 }
 
-// @todo if body is pubsub, prompt for raw or base64 decoded
-const body = JSON.stringify(debugLog.jsonPayload.body, null, 2);
-await clipboard.writeText(body);
+const body = debugLog.jsonPayload.body;
+// if it's a pubsub, ask if they want to copy the decoded data or the raw payload
+if (body.message.data && body.subscription) {
+  const operation = await arg('The payload is a PubSub event. Do you want to:', [
+    {
+      name: 'Copy payload to clipboard',
+      description: 'Ready to paste as payload in a POST request',
+      value: 'copy',
+    },
+    {
+      name: 'Copy the base64 decoded data to clipboard',
+      description: 'Useful for modifying the data',
+      value: 'copy-decoded',
+    },
+  ]);
+
+  if (operation === 'copy-decoded') {
+    const decoded = Buffer.from(body.message.data, 'base64').toString('utf8');
+    const pretty = JSON.stringify(JSON.parse(decoded), null, 2);
+    await clipboard.writeText(pretty);
+    notify('Decoded payload message copied to clipboard');
+    exit();
+  }
+}
+
+const json = JSON.stringify(body, null, 2);
+await clipboard.writeText(json);
 
 notify('Payload copied to clipboard');
