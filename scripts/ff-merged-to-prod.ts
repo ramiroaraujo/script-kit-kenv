@@ -1,6 +1,10 @@
 // Name: ff Merged to Prod
 
 import "@johnlindquist/kit";
+import {binPath} from "../lib/bin-helper";
+import {FFService} from "../lib/ff-service";
+
+const gh = await binPath('gh');
 
 // 1. Fetch GitHub PR URLs from the clipboard
 let prURLs = (await clipboard.readText()).split('\n');
@@ -19,15 +23,17 @@ for(let prURL of prURLs) {
 
     const [,projectName, prNumber] = match;
 
+    const service = await FFService.init(projectName)
+
     // Verify if project folder exists
-    let path = home(`FactoryFix/${projectName}`);
+    const path = service.getPath();
     if(!await pathExists(path)){
         notifications.push(`No folder found for the project: ${projectName}`);
         continue;
     }
 
     // Execute the command to check if the PR is merged to prod
-    let prSha = await exec(`cd ${path} && /opt/homebrew/bin/gh pr view ${prNumber} --json commits --jq '.commits[-1].oid'`);
+    let prSha = await exec(`cd ${path} && ${gh} pr view ${prNumber} --json commits --jq '.commits[-1].oid'`);
     await exec(`cd ${path} && git fetch origin prod > /dev/null 2>&1`);
     let isMerged = (await exec(`cd ${path} && git merge-base --is-ancestor ${prSha.stdout.trim()} origin/prod && echo "yes" || echo "no"`)).stdout.trim();
 
@@ -37,9 +43,9 @@ for(let prURL of prURLs) {
 
 // 2. Notify and copy to clipboard
 for(let note of notifications) {
-    await notify(note);
+    notify(note);
 }
 await clipboard.writeText(notifications.join('\n'));
 
 // 3. Notify the completion
-await notify("All PR checks completed. Results copied to clipboard.");
+notify("All PR checks completed. Results copied to clipboard.");
