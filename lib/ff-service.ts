@@ -7,8 +7,8 @@ export class FFService {
 
     private path:string;
     private isNestService:boolean;
-    private constructor(private readonly service:string, base:string, isNest:boolean) {
-        this.path = `${base}/${service}`
+    private constructor(private readonly folder:string, base:string, isNest:boolean) {
+        this.path = `${base}/${folder}`
         this.isNestService = isNest
     }
 
@@ -36,6 +36,12 @@ export class FFService {
 
     getPath() {
         return this.path
+    }
+
+    async getServiceName() {
+        const path = `${this.path}/deployment/terraform/terraform.tfvars`;
+        const content = await readFile(path, 'utf-8');
+        return content.match(/service_name\s*=\s*"(.*)"/)[1]
     }
 
     async getEnvs() {
