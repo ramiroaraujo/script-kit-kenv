@@ -8,7 +8,7 @@ import {binPath} from "../lib/bin-helper";
 const gcloud = await binPath('gcloud');
 
 const folders = await getFFLocalServices();
-const folder = await arg("Select a folder", folders);
+const folder = await arg("Select a folder to inject the environment", folders);
 
 
 // 2. Prompt for an environment
