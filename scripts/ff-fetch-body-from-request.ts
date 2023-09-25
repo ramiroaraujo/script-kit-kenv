@@ -5,6 +5,7 @@ import {selectEnv} from "../lib/ff-helper";
 import {CacheHelper} from "../lib/cache-helper";
 import {binPath} from "../lib/bin-helper";
 import relativeTime from "dayjs/plugin/relativeTime.js";
+import {assertValue} from "../lib/misc-helper";
 
 const dayjs = await npm('dayjs')
 dayjs.extend(relativeTime);
@@ -24,37 +25,45 @@ type Request = {
 
 const gcloud = await binPath('gcloud')
 
+//don't init cache yet, we don't know the env
 const cache = new CacheHelper().setDefaultExpires('1w')
 
-const clipboardText = await clipboard.readText();
-//check if clipboard text is a gcloud log url or gcloud log JSON
+//default to fetch
 let fetch = true
+
 let request:Request
 let env:string
+
+const clipboardText = await clipboard.readText();
+
 if (clipboardText.startsWith('https://console.cloud.google.com/logs/query')) {
     try {
         const url = new URL(clipboardText)
+        //parse the URL to get the query params
         const params = url.pathname
             .substring('/logs/query;'.length)
             .split(';')
             .map((pair) => pair.split('='))
             .reduce((acc, [key, value]) => ({...acc, [key]: decodeURIComponent(value)}), {} as Record<string, any>);
+        //parse the query params to get the query
         params.query = params.query.split('\n')
             .map((line) => line.trim().split('='))
             .reduce((acc, [key, value]) => ({...acc, [key]: value.replace(/^"?([^"]+)"?$/, '$1')}), {})
+
         request = {
             httpRequest: {
-                requestUrl: params.query['httpRequest.requestUrl']
+                requestUrl: assertValue(params.query['httpRequest.requestUrl'])
             },
-            trace: params.query['insertId'],
-            timestamp: params.cursorTimestamp,
+
+            trace: assertValue(params.query['insertId']),
+            timestamp: assertValue(params.cursorTimestamp),
             resource: {
                 labels: {
-                    service_name: params.query['resource.labels.service_name']
+                    service_name: assertValue(params.query['resource.labels.service_name'])
                 }
             }
         }
-        env = url.searchParams.get('project')
+        env = assertValue(url.searchParams.get('project'))
 
         //init cache after env is defined
         cache.setKey(`ff-fetch-body-from-request-${env}`)
@@ -66,35 +75,42 @@ if (clipboardText.startsWith('https://console.cloud.google.com/logs/query')) {
         ])
     } catch (e) {
         log(e)
+        notify({title: 'Clipboard is not a valid log URL', message: 'Reverting to fetch from the services list'})
     }
-}
-try {
-    const json = JSON.parse(clipboardText)
-    request = {
-        httpRequest: {
-            requestUrl: json.httpRequest.requestUrl
-        },
-        trace: json.trace,
-        timestamp: json.timestamp,
-        resource: {
-            labels: {
-                service_name: json.resource.labels.service_name
+} else if (clipboardText.startsWith('{')) {
+    try {
+        const json = JSON.parse(clipboardText)
+        request = {
+            httpRequest: {
+                requestUrl: assertValue(json.httpRequest.requestUrl)
+            },
+            trace: assertValue(json.trace),
+            timestamp: assertValue(json.timestamp),
+            resource: {
+                labels: {
+                    service_name: assertValue(json.resource.labels.service_name)
+                }
             }
         }
+        env = assertValue(json.resource.labels.project_id)
+
+        //init cache after env is defined
+        cache.setKey(`ff-fetch-body-from-request-${env}`)
+        await cache.init();
+
+        fetch = await arg('Do you want the Request that belongs the clipboard log?', [
+            { name: 'Yes', value: false },
+            { name: 'No, select from the list of Services', value: true },
+        ])
+    } catch (e) {
+        //don't even log or notify if it's not a valid JSON
+        if (!(e instanceof SyntaxError)) {
+            log(e)
+            notify({title: 'Clipboard is not a valid JSON payload', message: 'Reverting to fetch from the services list'})
+        }
     }
-    env = json.resource.labels.project_id
-
-    //init cache after env is defined
-    cache.setKey(`ff-fetch-body-from-request-${env}`)
-    await cache.init();
-
-    fetch = await arg('Do you want the Request that belongs the clipboard log?', [
-        { name: 'Yes', value: false },
-        { name: 'No, select from the list of Services', value: true },
-    ])
-} catch (e) {
-    log(e)
 }
+
 
 if (fetch) {
     // select env
@@ -135,9 +151,7 @@ if (fetch) {
 }
 
 //fetch debug log for request
-debugger
 const debugLog = await cache.remember(`debug-log-${request.trace}`, async () => {
-    debugger;
     const { httpRequest: { requestUrl }, resource: { labels: {service_name}}, timestamp } = request;
     const path = new URL(requestUrl).pathname
     const {stdout:log} = await exec(`${gcloud} logging read 'resource.labels.service_name="${service_name}" AND severity="DEBUG" AND labels.path="${path}" AND timestamp>="${timestamp}"' --limit=1 --project=${env} --format="json"`)
