@@ -1,5 +1,7 @@
 import {getFFPath} from "./ff-helper";
-import {config} from "dotenv";
+import * as dotenv from "dotenv";
+
+await npm('jsonwebtoken')
 
 export class FFService {
 
@@ -31,4 +33,10 @@ export class FFService {
     get isNest() {
         return this.isNestService
     }
+
+    async getEnvs() {
+        const config = await readFile(home(`${this.path}/config.env`), 'utf-8');
+        return dotenv.parse<Record<string, string>>(config)
+    }
+
 }
