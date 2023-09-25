@@ -63,10 +63,10 @@ if (flag?.remove) {
 
     // Edit package.json
     const packageJsonContent = await readFile(packageJsonPath, 'utf-8');
-    const startDebugRegex = /("start:debug":\s*)"nest start --debug --watch"/;
+    const startDebugRegex = /("start:debug":.+?)"nest start --debug --watch/;
 
     if (startDebugRegex.test(packageJsonContent)) {
-        const updatedPackageJsonContent = packageJsonContent.replace(startDebugRegex, '$1"nest start --debug=0.0.0.0 --watch"');
+        const updatedPackageJsonContent = packageJsonContent.replace(startDebugRegex, '$1"nest start --debug=0.0.0.0 --watch');
         await writeFile(packageJsonPath.replace('package.json', 'package.json'), updatedPackageJsonContent, 'utf-8');
     }
 
