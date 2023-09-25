@@ -37,7 +37,7 @@ if (operationType === 'service') {
     serviceName = await service.getServiceName();
 
     //cache topics for 30 days
-    const topics: any[] = await cache.remember(`topics.${serviceName}`, async () => {
+    const topics  = await cache.remember(`topics.${serviceName}`, async () => {
         const serviceUrl = (await exec(`${gcloud} run services describe ${serviceName} --platform managed --project=${env} --region us-central1 --format "value(status.url)"`)).stdout
 
         //list pubsub topics for the service url
@@ -64,7 +64,7 @@ if (operationType === 'service') {
     }
 } else if (operationType === 'topic') {
     //list all topics and prompt to select one
-    const topics:any[] = await cache.remember(`topics`, async () => {
+    const topics = await cache.remember(`topics`, async () => {
         const { stdout: reponse } = await exec(`${gcloud} pubsub subscriptions list --project=${env} --format=json`)
         const subscriptions = JSON.parse(reponse)
         const topics = subscriptions
@@ -87,7 +87,7 @@ if (operationType === 'service') {
         return topics
     })
 
-    const selectedTopic:any = await arg('Choose a topic', [...topics, cache.defaultInvalidate])
+    const selectedTopic:Record<string, string>|'invalidate' = await arg('Choose a topic', [...topics, cache.defaultInvalidate])
     if (selectedTopic === 'invalidate') {
         await cache.clear(`topics`)
         notify('Cache invalidated')
@@ -98,12 +98,12 @@ if (operationType === 'service') {
 }
 
 //cache payloads for a day
-let payloads: any[] = await cache.remember(`payloads.${serviceName}.${topic}`, async () => {
+const payloads = await cache.remember(`payloads.${serviceName}.${topic}`, async () => {
     let payloads = []
     const dateUnits = ['week', 'day', 'hour', 'minute']
-    let length = 10
+    const length = 10
     do {
-        let dateUnit = dateUnits.pop()
+        const dateUnit = dateUnits.pop()
         const {stdout: response} = await exec(`${gcloud} logging read 'resource.labels.service_name="${serviceName}" severity="DEBUG" jsonPayload.body.subscription="${topic}" timestamp>="'$(${date} -d '-1 ${dateUnit}' --iso-8601=seconds --utc)'"' --limit=20 --format=json --project=${env} | ${jq} '[.[] | .jsonPayload.body]'`)
         payloads = JSON.parse(response)
     } while (payloads.length < length && dateUnits.length)
@@ -121,8 +121,7 @@ const payload = await arg({
     placeholder: 'Choose a payload',
 }, [cache.defaultInvalidate, ...payloads].map(payload => {
     const invalidate = payload.value === 'invalidate';
-    debugger;
-    const name = !invalidate ? `From ${dayjs(payload.message.publishTime).format('MMM D, YYYY h:mm A')}` : payload.name
+    const name = !invalidate ? `Payload from ${dayjs(payload.message.publishTime).format('MMM D, YYYY h:mm A')}` : payload.name
     return {
         name,
         preview: () => {
@@ -153,12 +152,13 @@ switch (operation) {
         await clipboard.writeText(JSON.stringify(payload, null, 2))
         notify('Complete payload copied to clipboard')
         break;
-    case 'copy-decoded':
+    case 'copy-decoded': {
         const text = Buffer.from(payload.message.data, 'base64').toString('utf-8')
         const pretty = JSON.stringify(JSON.parse(text), null, 2)
         await clipboard.writeText(pretty)
         notify('Decoded payload copied data to clipboard')
         break;
+    }
     default:
         break;
 }

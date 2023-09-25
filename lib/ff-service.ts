@@ -23,11 +23,13 @@ export class FFService {
         let isNest = false;
 
         try {
-            let jsonPath = home(`${path}/package.json`);
-            let file = await readFile(jsonPath, 'utf-8');
+            const jsonPath = home(`${path}/package.json`);
+            const file = await readFile(jsonPath, 'utf-8');
             const packageJson = JSON.parse(file);
             isNest = !!packageJson.dependencies['@nestjs/core'];
-        } catch (e) {}
+        } catch (e) {
+            //--
+        }
 
         return new FFService(service, base, isNest)
     }

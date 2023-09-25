@@ -9,17 +9,17 @@ const content = await clipboard.readText();
 const jq = await binPath('jq')
 
 const transform = async (text: string, query: string): Promise<string> => {
-    let response = await exec(`${jq} ${query}`, {
+    const {stdout, failed} = await exec(`${jq} ${query}`, {
         reject: false,
         input: text,
     });
-    if (response.failed) {
+    if (failed) {
         throw new Error('invalid query');
     }
-    if (response.stdout.trim() === 'null') {
+    if (stdout.trim() === 'null') {
         throw new Error('null');
     }
-    return response.stdout;
+    return stdout;
 }
 
 // Prompt for a jq transform

@@ -48,28 +48,28 @@ if ('USE_GOOGLE_S2S_AUTH' in envVarsDict) {
 const allowedUrls = new Set(['FF_UI_V2_URL', 'JOB_BOARD_UI_URL', 'UI2_BASE_URL', 'V4_API_URL']);
 let urlTail = '';
 
-for (let [key, value] of Object.entries(envVarsDict)) {
+for (const [key, value] of Object.entries(envVarsDict)) {
     if (key.endsWith('_URL') && value.includes('.a.run.app')) {
         urlTail = value.match(/-([a-z0-9]+-uc\.a\.run\.app)$/)[1];
         break;
     }
 }
 
-for (let [key, value] of Object.entries(envVarsDict)) {
+for (const [key, value] of Object.entries(envVarsDict)) {
     if (key.endsWith('_URL') && !allowedUrls.has(key) && value.endsWith(urlTail)) {
-        let subdomain = value.split(`https://`)[1].split(`-${urlTail}`)[0];
+        const subdomain = value.split(`https://`)[1].split(`-${urlTail}`)[0];
         envVarsDict[key] = `http://${subdomain}:8080`;
     }
 }
 
 // 7. Read the original file line by line and replace the values as needed
-let configLines = (await readFile(configPath, 'utf-8')).split('\n');
-let newConfigLines = [];
+const configLines = (await readFile(configPath, 'utf-8')).split('\n');
+const newConfigLines = [];
 
-for (let line of configLines) {
-    let match = line.match(/^(\s*)(\w+)(\s*=\s*)(.*)$/);
+for (const line of configLines) {
+    const match = line.match(/^(\s*)(\w+)(\s*=\s*)(.*)$/);
     if (match) {
-        let [_, whitespace, key, separator, value] = match;
+        const [_, whitespace, key, separator] = match;
         if (key in envVarsDict) {
             // Replace the value while keeping the whitespace, the key, and the separator intact
             newConfigLines.push(`${whitespace}${key}${separator}${envVarsDict[key]}`);
@@ -86,12 +86,12 @@ for (let line of configLines) {
 }
 
 // Append the remaining keys from envVarsDict
-for (let [key, value] of Object.entries(envVarsDict)) {
+for (const [key, value] of Object.entries(envVarsDict)) {
     newConfigLines.push(`${key}=${value}`);
 }
 
 // 8. Write the updated environment variables back to config.env
-let newConfig = newConfigLines.join('\n');
+const newConfig = newConfigLines.join('\n');
 await writeFile(configPath, newConfig);
 
 notify(`Environment variables from ${env} injected successfully`);

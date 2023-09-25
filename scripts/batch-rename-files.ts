@@ -38,18 +38,18 @@ const options = [
 ];
 
 
-let files = (await getSelectedFile()).split('\n');
-let basePath = files[0].split('/').slice(0, -1).join('/');
+const files = (await getSelectedFile()).split('\n');
+const basePath = files[0].split('/').slice(0, -1).join('/');
 
 let filenames = files.map(file => file.split('/').pop().split('.')[0]);
-let extensions = files.map(file => file.split('/').pop().split('.')[1]);
+const extensions = files.map(file => file.split('/').pop().split('.')[1]);
 
-let originalFiles = [...filenames];
+const originalFiles = [...filenames];
 
 const handleRenaming = async (filenames, extensions, renaming) => {
-    let { key, parameter } = renaming;
-    let func = renamings[key];
-    let paramValue = parameter
+    const { key, parameter } = renaming;
+    const func = renamings[key];
+    const paramValue = parameter
         ? await arg({
             input: parameter.defaultValue,
         },(input) => {
@@ -66,14 +66,14 @@ const handleRenaming = async (filenames, extensions, renaming) => {
     return func.apply(null, [filenames, extensions, paramValue]);
 };
 
-let operations = [];
+const operations = [];
 let rerun = true;
 const cache = new CacheHelper('batch-rename-files', 'never')
 await cache.init();
 const usage = cache.get('usage') ?? {}
 
 while (rerun) {
-    let renaming = await arg(
+    const renaming = await arg(
         {
             placeholder: "Choose a renaming option",
             hint: operations.join(' > '),
@@ -96,7 +96,6 @@ while (rerun) {
                             if (option.value.parameter) throw ''
                             const func = renamings[option.value.key]
                             const renamedFiles = func.apply(null, [filenames, extensions]);
-                            debugger;
                             return md(`<pre>${renamedFiles.join('\n')}</pre>`)
                         } catch (e) {
                             return md(`<pre>${filenames.join('\n')}</pre>`)
@@ -120,4 +119,4 @@ for (let i = 0; i < filenames.length; i++) {
     mv(`${basePath}/${originalFiles[i]}.${extensions[i]}`, `${basePath}/${filenames[i]}`);
 }
 
-await notify("Files renamed successfully");
+notify("Files renamed successfully");

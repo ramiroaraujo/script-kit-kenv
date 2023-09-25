@@ -16,12 +16,12 @@ const transformations = {
     kebabCase: text => text.split('\n').map(line => line.replace(/[\s-_]+(\w)/g, (_, p) => `-${p.toLowerCase()}`).replace(/^[A-Z]/, match => match.toLowerCase())).join('\n'),
     reverseCharacters: text => text.split('\n').map(line => line.split('').reverse().join('')).join('\n'),
     removeDuplicateLines: text => {
-        let lines = text.split('\n');
+        const lines = text.split('\n');
         return [...new Set(lines)].join('\n');
     },
     keepOnlyDuplicateLines: text => {
-        let lines = text.split('\n');
-        let duplicates = lines.filter((item, index) => lines.indexOf(item) !== index);
+        const lines = text.split('\n');
+        const duplicates = lines.filter((item, index) => lines.indexOf(item) !== index);
         return [...new Set(duplicates)].join('\n');
     },
     removeEmptyLines: text => text.split('\n').filter(line => line.trim() !== '').join('\n'),
@@ -31,10 +31,10 @@ const transformations = {
     sortLinesNumerically: text => text.split('\n').sort((a, b) => parseInt(a) - parseInt(b)).join('\n'),
     reverseLines: text => text.split('\n').reverse().join('\n'),
     shuffleLines: text => {
-        let lines = text.split('\n')
+        const lines = text.split('\n')
         for (let i = lines.length - 1; i > 0; i--) {
-            let j = Math.floor(Math.random() * (i + 1))
-            let temp = lines[i]
+            const j = Math.floor(Math.random() * (i + 1))
+            const temp = lines[i]
             lines[i] = lines[j]
             lines[j] = temp
         }
@@ -494,8 +494,8 @@ const operationOptions = [
 ]
 
 const handleTransformation = async (text, transformation) => {
-    let {key, parameter} = transformation;
-    let paramValue = parameter ? await arg({
+    const {key, parameter} = transformation;
+    const paramValue = parameter ? await arg({
         input: parameter.defaultValue,
     }, (input) => {
         try {
@@ -527,7 +527,7 @@ const usage = cache.get('usage') ?? {}
 const timestamps = cache.get('timestamps') ?? {}
 
 loop: while (true) {
-    let transformation = await arg(
+    const transformation = await arg(
         {
             placeholder: "Choose a text transformation",
             hint: operations.map(o => o.name).join(' > '),
@@ -600,14 +600,15 @@ loop: while (true) {
             //it is still persisted and will be updated if new transformations are applied
             lastTransformations = [];
             break;
-        case "save":
+        case "save": {
             const transformationName = await arg("Enter a name for this transformations:");
 
             persisted[transformations.camelCase(transformationName)] = operations;
             await cache.store('persisted', persisted)
             break loop;
-        case "listSaved":
-            let flags = {delete: {name: "Delete", shortcut: "cmd+enter",}}
+        }
+        case "listSaved": {
+            const flags = {delete: {name: "Delete", shortcut: "cmd+enter",}}
             const savedTransformationName = await arg(
                 {
                     placeholder: "Select a saved transformation to apply:",
@@ -621,7 +622,7 @@ loop: while (true) {
                 })
             );
             if (flag.delete) {
-                let value = await arg("Are you sure you want to delete this transformation?", ['yes', 'no'])
+                const value = await arg("Are you sure you want to delete this transformation?", ['yes', 'no'])
                 if (value === "yes") {
                     delete persisted[savedTransformationName];
                     await cache.store('persisted', persisted)
@@ -634,7 +635,8 @@ loop: while (true) {
                 lastTransformations = [];
             }
             break;
-        default:
+        }
+        default:{
             const result = await handleTransformation(clipboardText, transformation);
             clipboardText = result.text;
 
@@ -646,6 +648,7 @@ loop: while (true) {
             timestamps[transformation.key] = Date.now();
             await cache.store('usage', usage)
             await cache.store('timestamps', timestamps)
+        }
     }
 }
 

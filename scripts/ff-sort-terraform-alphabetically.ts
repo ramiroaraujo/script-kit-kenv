@@ -21,7 +21,7 @@ const matchers = [
     }
 ]
 
-let text = await clipboard.readText()
+const text = await clipboard.readText()
 
 let results = [];
 for (const matcher of matchers) {
@@ -30,6 +30,6 @@ for (const matcher of matchers) {
     results = results.concat(matches.map(match => match.trim()).sort(matcher.sort))
 }
 
-let sorted = results.join("\n\n")
+const sorted = results.join("\n\n")
 
 await clipboard.writeText(sorted)

@@ -4,7 +4,7 @@
 import "@johnlindquist/kit";
 
 const Database = await npm("better-sqlite3");
-let databasePath = home('Library/Application Support/Alfred/Databases/clipboard.alfdb');
+const databasePath = home('Library/Application Support/Alfred/Databases/clipboard.alfdb');
 const db = new Database(databasePath);
 if (!await pathExists(databasePath)) {
     notify("Alfred clipboard database not found")

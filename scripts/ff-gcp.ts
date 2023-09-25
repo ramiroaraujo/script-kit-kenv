@@ -179,7 +179,7 @@ if (url.type === 'run') {
         openList, ...schedulerInstances])
     if (result !== 'Open') {
         await clipboard.writeText(result)
-        await notify('paste the name into the filters')
+        notify('paste the name into the filters')
     }
 } else if (url.type === 'firestore') {
     const collections = url.collections.map(collection => ({
@@ -189,7 +189,7 @@ if (url.type === 'run') {
             query: `${cloudUrl}/firestore/databases/-default-/data/query;collection=%2F${collection}?project=${env}`
         }
     }))
-    let flags = {
+    const flags = {
         query: {
             name: "Query",
             shortcut: "cmd+enter",

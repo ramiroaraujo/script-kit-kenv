@@ -80,7 +80,7 @@ if (action === "Merge") {
         placeholder: "Enter the separator for splitting",
     }, async (input) => {
         if (input === '\\n') input = '\n'
-        let strings = await getSplitClipboard(input, true);
+        const strings = await getSplitClipboard(input, true);
         return md(`<pre>${strings.join('\n')}</pre>`)
     })
     const trim = await arg("Trim clipboard content?", ["Yes", "No"]);

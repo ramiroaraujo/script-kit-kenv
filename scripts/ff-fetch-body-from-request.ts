@@ -52,18 +52,18 @@ if (clipboardText.startsWith('https://console.cloud.google.com/logs/query')) {
 
         request = {
             httpRequest: {
-                requestUrl: assertValue(params.query['httpRequest.requestUrl'])
+                requestUrl: assertValue<string>(params.query['httpRequest.requestUrl'])
             },
 
-            trace: assertValue(params.query['insertId']),
-            timestamp: assertValue(params.cursorTimestamp),
+            trace: assertValue<string>(params.query['insertId']),
+            timestamp: assertValue<string>(params.cursorTimestamp),
             resource: {
                 labels: {
-                    service_name: assertValue(params.query['resource.labels.service_name'])
+                    service_name: assertValue<string>(params.query['resource.labels.service_name'])
                 }
             }
         }
-        env = assertValue(url.searchParams.get('project'))
+        env = assertValue<string>(url.searchParams.get('project'))
 
         //init cache after env is defined
         cache.setKey(`ff-fetch-body-from-request-${env}`)
@@ -82,17 +82,17 @@ if (clipboardText.startsWith('https://console.cloud.google.com/logs/query')) {
         const json = JSON.parse(clipboardText)
         request = {
             httpRequest: {
-                requestUrl: assertValue(json.httpRequest.requestUrl)
+                requestUrl: assertValue<string>(json.httpRequest.requestUrl)
             },
-            trace: assertValue(json.trace),
-            timestamp: assertValue(json.timestamp),
+            trace: assertValue<string>(json.trace),
+            timestamp: assertValue<string>(json.timestamp),
             resource: {
                 labels: {
-                    service_name: assertValue(json.resource.labels.service_name)
+                    service_name: assertValue<string>(json.resource.labels.service_name)
                 }
             }
         }
-        env = assertValue(json.resource.labels.project_id)
+        env = assertValue<string>(json.resource.labels.project_id)
 
         //init cache after env is defined
         cache.setKey(`ff-fetch-body-from-request-${env}`)

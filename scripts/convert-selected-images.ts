@@ -15,7 +15,7 @@ const selectedFiles = files.filter(file =>
 
 // Notify if no files are selected
 if (!selectedFiles.length) {
-  await notify("No supported files selected");
+  notify("No supported files selected");
   exit();
 }
 
@@ -29,7 +29,7 @@ const outputFormat = await arg("Choose an output format", [
   "webp",
 ]);
 
-const getUniquePath = async (outputPath, suffix = "") => {
+const getUniquePath = async (outputPath: string, suffix = "") => {
   if (await isFile(outputPath)) {
     const name = path.basename(outputPath, path.extname(outputPath));
     const newName = `${name}${suffix}-copy${path.extname(outputPath)}`;
@@ -77,4 +77,4 @@ for (const file of selectedFiles) {
   }
 }
 
-await notify(`Converted selected files to ${outputFormat.toUpperCase()}`);
+notify(`Converted selected files to ${outputFormat.toUpperCase()}`);
