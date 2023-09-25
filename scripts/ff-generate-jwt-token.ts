@@ -4,7 +4,7 @@ import "@johnlindquist/kit";
 import {getFFLocalServices} from "../lib/ff-helper";
 import {FFService} from "../lib/ff-service";
 
-const serviceName = await getFFLocalServices();
+const serviceName = await arg("Select a service", await getFFLocalServices());
 
 const service = await FFService.init(serviceName);
 

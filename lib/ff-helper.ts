@@ -36,8 +36,7 @@ export const getFFLocalServices = async (nestOnly = true) => {
         });
         folders = (await Promise.all(validFolders)).filter(Boolean);
     }
-
-    return await arg("Select a folder to inject the debug config", folders);
+    return folders;
 }
 
 export const getFFPath = async ():Promise<string> => {
