@@ -1,49 +1,32 @@
 // Name: ff Inject Environment
 
 import "@johnlindquist/kit";
+import {getFFLocalServices, selectEnv} from "../lib/ff-helper";
+import {FFService} from "../lib/ff-service";
+import {binPath} from "../lib/bin-helper";
 
-// 1. Prompt for a local project
-const allFolders = (await exec(`cd ~/FactoryFix && ls -d */`)).all.split('\n').map(folder => folder.replace('/', ''));
-const validFolders = allFolders.map(async folder => {
-    try {
-        let path = home(`FactoryFix/${folder}/package.json`);
-        const file = await readFile(path, 'utf-8');
-        const packageJson = JSON.parse(file);
+const gcloud = await binPath('gcloud');
 
-        return packageJson.dependencies['@nestjs/core'] ? folder : null;
-    } catch (e) {
-        return null;
-    }
-});
-const folders = (await Promise.all(validFolders)).filter(Boolean);
+const folders = await getFFLocalServices();
 const folder = await arg("Select a folder", folders);
 
+
 // 2. Prompt for an environment
-const environments = [
-    "ff-app-dev",
-    "ff-app-iso-1",
-    "ff-app-iso-2",
-    "ff-app-iso-3",
-    "ff-app-iso-4",
-    "ff-app-prod",
-];
-// your actual environments
-const env = await arg("Select an environment", environments);
+const env = await selectEnv()
 
 // 3. Get the service name
-const tfvarsPath = home(`FactoryFix/${folder}/deployment/terraform/terraform.tfvars`);
-let tfvarsContent = await readFile(tfvarsPath, 'utf-8');
-let serviceName = tfvarsContent.match(/service_name\s*=\s*"(.*)"/)[1];
+const service = await FFService.init(folder);
+const serviceName = await service.getServiceName();
 
 // 4. Fetch the environment variables of the instance
-const cloudRunEnv = await exec(`/opt/homebrew/bin/gcloud run services describe ${serviceName} --platform=managed --project=${env} --format="json" --region=us-central1`);
-const envVars = JSON.parse(cloudRunEnv.stdout).spec.template.spec.containers[0].env;
+const {stdout:cloudRunEnv} = await exec(`${gcloud} run services describe ${serviceName} --platform=managed --project=${env} --format="json" --region=us-central1`);
+const envVars = JSON.parse(cloudRunEnv).spec.template.spec.containers[0].env;
 
 // 5. Overwrite the variables in config.env
-const configPath = home(`FactoryFix/${folder}/config.env`);
+const configPath = `${service.getPath()}/config.env`
 
 // 6. Make a copy of the original config.env
-const backupPath = home(`FactoryFix/${folder}/config.backup.env`);
+const backupPath = `${service.getPath()}/config.bak.env`;
 
 if (!await pathExists(backupPath)) {
     await copyFile(configPath, backupPath);
@@ -111,4 +94,4 @@ for (let [key, value] of Object.entries(envVarsDict)) {
 let newConfig = newConfigLines.join('\n');
 await writeFile(configPath, newConfig);
 
-await notify(`Environment variables from ${env} injected successfully`);
+notify(`Environment variables from ${env} injected successfully`);
