@@ -30,8 +30,12 @@ export class FFService {
         return new FFService(service, base, isNest)
     }
 
-    get isNest() {
+    isNest() {
         return this.isNestService
+    }
+
+    getPath() {
+        return this.path
     }
 
     async getEnvs() {

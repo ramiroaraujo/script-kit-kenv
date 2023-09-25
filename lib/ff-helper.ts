@@ -29,7 +29,7 @@ export const getFFLocalServices = async (nestOnly = true) => {
         const validFolders = allFolders.map(async folder => {
             try {
                 const service = await FFService.init(folder)
-                return service.isNest ? folder : null;
+                return service.isNest() ? folder : null;
             } catch (e) {
                 return null;
             }
