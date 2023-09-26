@@ -1,4 +1,4 @@
-import { getEnv, hasEnv } from './env-helper';
+import { getEnv } from './env-helper';
 import { FFService } from './ff-service';
 
 export const selectEnv = async (withoutPro = false) => {
