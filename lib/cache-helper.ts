@@ -69,7 +69,7 @@ export class CacheHelper {
     }
   }
 
-  async store(path: string, data: any, expires: number = this.defaultExpires) {
+  async store(path: string, data: unknown, expires: number = this.defaultExpires) {
     if (!this.isInitialized) {
       await this.init();
     }
@@ -91,7 +91,11 @@ export class CacheHelper {
     await this.db.write();
   }
 
-  async remember(type: string, invoke: Function, expires: number = this.defaultExpires) {
+  async remember<T>(
+    type: string,
+    invoke: () => T,
+    expires: number = this.defaultExpires,
+  ): Promise<T> {
     if (!this.isInitialized) {
       await this.init();
     }

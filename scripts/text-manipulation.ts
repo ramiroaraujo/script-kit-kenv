@@ -628,7 +628,7 @@ const handleTransformation = async (text, transformation) => {
 };
 
 let clipboardText = await clipboard.readText();
-let operations: { name: string; params: any[] }[] = [];
+let operations: { name: string; params: unknown[] }[] = [];
 
 // Cache setup
 const cache = await new CacheHelper('text-manipulation', 'never').init();
@@ -648,6 +648,7 @@ const runAllTransformations = (all) => {
   }, clipboardText);
 };
 
+// eslint-disable-next-line no-constant-condition
 loop: while (true) {
   const transformation = await arg(
     {

@@ -4,6 +4,12 @@ import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
 import { getEnv } from '../lib/env-helper';
 
+type Repo = {
+  name: string;
+  html_url: string;
+  clone_url: string;
+};
+
 const cache = new CacheHelper('ff-repos', '1h');
 
 const perPage = 10;
@@ -41,7 +47,7 @@ const getRepos = async () => {
     }
 
     // combine all results
-    return [await response.json(), ...results].flat();
+    return [await response.json(), ...results].flat() as Repo[];
   });
 };
 
@@ -53,7 +59,7 @@ const getPullRequests = async (repo) => {
 };
 
 const repos = await getRepos();
-const repo: any = await arg('Select a repo to clone or invalidate cache', [
+const repo = await arg<Repo | 'invalidate'>('Select a repo to clone or invalidate cache', [
   ...repos.map((repo) => ({ name: repo.name, value: repo })),
   cache.defaultInvalidate,
 ]);

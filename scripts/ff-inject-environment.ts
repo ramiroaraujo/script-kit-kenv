@@ -70,7 +70,7 @@ const newConfigLines = [];
 for (const line of configLines) {
   const match = line.match(/^(\s*)(\w+)(\s*=\s*)(.*)$/);
   if (match) {
-    const [_, whitespace, key, separator] = match;
+    const [, whitespace, key, separator] = match;
     if (key in envVarsDict) {
       // Replace the value while keeping the whitespace, the key, and the separator intact
       newConfigLines.push(`${whitespace}${key}${separator}${envVarsDict[key]}`);
