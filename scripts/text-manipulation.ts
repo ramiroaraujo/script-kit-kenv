@@ -4,6 +4,7 @@
 
 import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
+import { Choice } from '../../../../.kit';
 
 const xmlBeautifier = await npm('xml-beautifier');
 
@@ -237,7 +238,7 @@ const transformations = {
   },
 };
 
-const options = [
+const options: Choice[] = [
   {
     name: 'Sum All Numbers',
     description: 'Sum all numbers in each line',
@@ -561,10 +562,16 @@ const options = [
   },
 ];
 
-const operationOptions = [
+const operationOptions: Choice[] = [
+  {
+    name: 'Select or Type a Transformation to Perform',
+    disableSubmit: true,
+    value: {
+      key: 'init',
+    },
+  },
   {
     name: 'Perform Last Transformations',
-    description: 'Perform the last transformations on the text and prompt for next',
     value: {
       key: 'last',
     },
@@ -623,7 +630,7 @@ let clipboardText = await clipboard.readText();
 let operations: { name: string; params: any[] }[] = [];
 const cache = await new CacheHelper('text-manipulation', 'never').init();
 
-let lastTransformations = cache.get('last') ?? [];
+let last = cache.get('last') ?? [];
 const persisted = cache.get('persisted') ?? {};
 const usage = cache.get('usage') ?? {};
 const timestamps = cache.get('timestamps') ?? {};
@@ -634,21 +641,31 @@ loop: while (true) {
       placeholder: 'Choose a text transformation',
       hint: operations.map((o) => o.name).join(' > '),
     },
-    [...options, ...operationOptions]
+    [...operationOptions, ...options]
       .map((option) => {
+        // hide init if there are already operations
+        if (option.value.key === 'init' && operations.length) return null;
         //last transformation if not available
-        if (option.value.key === 'last' && (!lastTransformations.length || operations.length))
-          return null;
+        if (option.value.key === 'last' && (!last.length || operations.length)) return null;
         //hide finish if no operations yet
         if (option.value.key === 'finish' && !operations.length) return null;
         //hide save if no operations yet
         if (option.value.key === 'save' && !operations.length) return null;
-
+        //hide listSaved if no saved transformations yet
         if (option.value.key === 'listSaved' && Object.keys(persisted).length === 0) return null;
+
+        //show last transformation names in description
+        if (option.value.key === 'last') {
+          option.description = last.map((o) => o.name).join(' > ');
+        }
+
         return option;
       })
       .filter(Boolean)
       .sort((a, b) => {
+        if (a.value.key === 'init') return -1;
+        if (b.value.key === 'init') return 1;
+
         if (a.value.key === 'last') return -1;
         if (b.value.key === 'last') return 1;
 
@@ -681,7 +698,7 @@ loop: while (true) {
           preview: () => {
             try {
               if (option.value.key === 'last')
-                return md(`<pre>${runAllTransformations(lastTransformations)}</pre>`);
+                return md(`<pre>${runAllTransformations(last)}</pre>`);
               if (option.value['parameter']) throw '';
               return md(`<pre>${transformations[option.value.key](clipboardText)}</pre>`);
             } catch (e) {
@@ -696,12 +713,12 @@ loop: while (true) {
     case 'finish':
       break loop;
     case 'last':
-      clipboardText = runAllTransformations(lastTransformations);
-      operations = [...lastTransformations];
+      clipboardText = runAllTransformations(last);
+      operations = [...last];
 
       //remove last transformations from local memory
       //it is still persisted and will be updated if new transformations are applied
-      lastTransformations = [];
+      last = [];
       break;
     case 'save': {
       const transformationName = await arg('Enter a name for this transformations:');
@@ -738,7 +755,7 @@ loop: while (true) {
         const savedTransformation = persisted[savedTransformationName];
         clipboardText = runAllTransformations(savedTransformation);
         operations = [...savedTransformation];
-        lastTransformations = [];
+        last = [];
       }
       break;
     }
@@ -759,8 +776,8 @@ loop: while (true) {
 }
 
 //store last transformations
-lastTransformations = operations;
-await cache.store('last', lastTransformations);
+last = operations;
+await cache.store('last', last);
 
 await clipboard.writeText(clipboardText.toString());
 
