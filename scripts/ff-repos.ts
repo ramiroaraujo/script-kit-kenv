@@ -10,6 +10,7 @@ const perPage = 10;
 
 const env = getEnv('GITHUB_TOKEN');
 const chromeProfile = getEnv('CHROME_PROFILE', 'Default');
+const org = getEnv('GITHUB_ORG');
 const githubUrl = 'https://api.github.com';
 
 const headers = {
@@ -19,7 +20,7 @@ const headers = {
 
 const getRepos = async () => {
   return await cache.remember('repos', async () => {
-    const response = await fetch(`${githubUrl}/orgs/FactoryFixInc/repos?per_page=${perPage}`, {
+    const response = await fetch(`${githubUrl}/orgs/${org}/repos?per_page=${perPage}`, {
       headers,
     });
     const linkHeader = response.headers.get('link');
@@ -31,7 +32,7 @@ const getRepos = async () => {
       const promises = [];
       for (let pageNum = 2; pageNum <= lastPageNum; pageNum++) {
         promises.push(
-          fetch(`${githubUrl}/orgs/FactoryFixInc/repos?per_page=${perPage}&page=${pageNum}`, {
+          fetch(`${githubUrl}/orgs/${org}/repos?per_page=${perPage}&page=${pageNum}`, {
             headers,
           }).then((res) => res.json()),
         );
@@ -45,7 +46,7 @@ const getRepos = async () => {
 };
 
 const getPullRequests = async (repo) => {
-  const response = await fetch(`${githubUrl}/repos/FactoryFixInc/${repo.name}/pulls?state=open`, {
+  const response = await fetch(`${githubUrl}/repos/${org}/${repo.name}/pulls?state=open`, {
     headers,
   });
   return await response.json();

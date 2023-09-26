@@ -39,13 +39,12 @@ export const getFFLocalServices = async (nestOnly = true) => {
 };
 
 export const getFFPath = async (): Promise<string> => {
-  const defaultPath = home('FactoryFix');
-  const env = getEnv('FF_PATH', defaultPath);
+  const env = getEnv('FF_PATH');
   if (await isDir(env)) {
     return env;
   }
 
-  const error = `Could not find FF_PATH in .env or ${defaultPath} does not exist`;
-  notify({ title: 'Could not find FactoryFix directory', message: error });
+  const error = `Could not find FF_PATH in .env`;
+  notify({ title: 'Could not find the projects directory', message: error });
   throw new Error(error);
 };
