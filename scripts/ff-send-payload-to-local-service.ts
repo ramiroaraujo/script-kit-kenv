@@ -6,13 +6,11 @@ import { FFService } from '../lib/ff-service';
 
 const folders = await getFFLocalServices();
 const serviceName = await arg('Select a service', folders);
-
 const service = await FFService.init(serviceName);
-
 const port = await service.getServicePort();
-
 const baseUrl = `http://localhost:${port}`;
 
+//check if service is running
 try {
   await get(baseUrl, { validateStatus: () => true });
 } catch (e) {
@@ -20,11 +18,10 @@ try {
   exit();
 }
 
+//load all files
 const { stdout: files } = await exec(
   `find "${service.getPath()}/src" -type f -name "*controller.ts"`,
 );
-
-//load all files
 const controllers = await Promise.all(
   files
     .split('\n')
@@ -38,6 +35,8 @@ const endpoints = controllers
   .map((controller) => {
     const base = controller.match(/@Controller\('(.*)'\)/)?.[1] ?? '';
     const methods = controller.matchAll(/@(Post|Put)\('?(.*)'?\)/g);
+    //@todo test (and fix?) for methods without a path name, not uncommon
+    //@todo check for named parameters in the path, maybe forms to handle those? :(
     return [...methods].map(([, method, path]) => {
       return { method, path: `${base}${path}` };
     });
@@ -56,6 +55,7 @@ const endpoint = await arg(
 let payload = await clipboard.readText();
 try {
   const data = JSON.parse(payload);
+  //plain numbers are valid json, we're only interested in objects
   if (typeof data !== 'object') {
     throw new Error();
   }
@@ -64,6 +64,7 @@ try {
 }
 const url = `${baseUrl}/${endpoint.path}`;
 
+// editor to add / edit the JSON payload
 await editor({
   name: `Send payload to ${url}`,
   value: payload,
