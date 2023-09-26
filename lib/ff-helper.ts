@@ -39,15 +39,12 @@ export const getFFLocalServices = async (nestOnly = true) => {
 };
 
 export const getFFPath = async (): Promise<string> => {
+  const defaultPath = home('FactoryFix');
   if (hasEnv('FF_PATH')) {
-    const env = getEnv('FF_PATH');
+    const env = getEnv('FF_PATH', defaultPath);
     if (await isDir(env)) {
       return env;
     }
-  }
-  const defaultPath = home('FactoryFix');
-  if (await isDir(defaultPath)) {
-    return defaultPath;
   }
 
   const error = `Could not find FF_PATH in .env or ${defaultPath} does not exist`;

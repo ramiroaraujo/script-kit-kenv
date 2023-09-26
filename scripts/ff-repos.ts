@@ -9,7 +9,7 @@ const cache = new CacheHelper('ff-repos', '1h');
 const perPage = 10;
 
 const env = getEnv('GITHUB_TOKEN');
-const chromeProfile = getEnv('CHROME_PROFILE', 'No Chrome Profile defined to open links in');
+const chromeProfile = getEnv('CHROME_PROFILE', 'Default');
 const githubUrl = 'https://api.github.com';
 
 const headers = {

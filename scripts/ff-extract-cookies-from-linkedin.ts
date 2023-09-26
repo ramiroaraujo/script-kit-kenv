@@ -11,7 +11,7 @@ const awk = await binPath('awk');
 
 const userDataDir = home('Library/Application Support/Google/Chrome');
 const tmpDataDir = '/tmp/chrome-new-session';
-const profileDir = getEnv('CHROME_PROFILE_DIR') || 'Default';
+const profileDir = getEnv('CHROME_PROFILE_DIR', 'Default');
 
 await exec(`mkdir -p ${tmpDataDir}`);
 await exec(`rsync -a "${userDataDir}/${profileDir}/" "/tmp/chrome-new-session/${profileDir}/"`);

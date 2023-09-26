@@ -1,9 +1,10 @@
-export const getEnv = (key: string, errorMessage?: string) => {
+export const getEnv = (key: string, defaultValue?: string) => {
   const env = process.env[key];
   if (env === undefined) {
+    if (defaultValue !== undefined) return defaultValue;
+
     const error = `Environment variable ${key} is not defined`;
-    const message = errorMessage ?? '';
-    notify({ title: error, message });
+    notify({ title: error });
     throw new Error(error);
   }
   return env;

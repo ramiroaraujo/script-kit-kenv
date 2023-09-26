@@ -8,7 +8,7 @@ import { selectEnv } from '../lib/ff-helper';
 
 const gcloud = await binPath('gcloud');
 
-const chromeProfile = getEnv('CHROME_PROFILE', 'No Chrome Profile defined to open links in');
+const chromeProfile = getEnv('CHROME_PROFILE', 'Default');
 
 const env = await selectEnv();
 
