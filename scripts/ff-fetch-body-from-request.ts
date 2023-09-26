@@ -5,7 +5,7 @@ import { selectEnv } from '../lib/ff-helper';
 import { CacheHelper } from '../lib/cache-helper';
 import { binPath } from '../lib/bin-helper';
 import relativeTime from 'dayjs/plugin/relativeTime.js';
-import { assertValue } from '../lib/misc-helper';
+import { assertKeyValue, assertValue } from '../lib/misc-helper';
 
 const dayjs = await npm('dayjs');
 dayjs.extend(relativeTime);
@@ -52,21 +52,20 @@ if (clipboardText.startsWith('https://console.cloud.google.com/logs/query')) {
       .split('\n')
       .map((line) => line.trim().split('='))
       .reduce((acc, [key, value]) => ({ ...acc, [key]: value.replace(/^"?([^"]+)"?$/, '$1') }), {});
-
     request = {
       httpRequest: {
-        requestUrl: assertValue<string>(params.query['httpRequest.requestUrl']),
+        requestUrl: assertKeyValue<string>(params.query, 'httpRequest.requestUrl'),
       },
 
-      trace: assertValue<string>(params.query['insertId']),
-      timestamp: assertValue<string>(params.cursorTimestamp),
+      trace: assertKeyValue<string>(params.query, 'insertId'),
+      timestamp: assertKeyValue<string>(params.query, 'timestamp'),
       resource: {
         labels: {
-          service_name: assertValue<string>(params.query['resource.labels.service_name']),
+          service_name: assertKeyValue<string>(params.query, 'resource.labels.service_name'),
         },
       },
     };
-    env = assertValue<string>(url.searchParams.get('project'));
+    env = assertValue<string>(url.searchParams.get('project'), 'Project is undefined');
 
     //init cache after env is defined
     cache.setKey(`ff-fetch-body-from-request-${env}`);
@@ -187,6 +186,7 @@ const debugLog = await cache.remember(`debug-log-${request.trace}`, async () => 
     AND severity="DEBUG"
     AND labels.path="${path}"
     AND timestamp>="${timestamp}"' \
+    --order=asc \
     --limit=1 \
     --project=${env} \
     --format="json"`,
@@ -202,7 +202,7 @@ if (!debugLog?.jsonPayload?.body) {
 
 const body = debugLog.jsonPayload.body;
 // if it's a pubsub, ask if they want to copy the decoded data or the raw payload
-if (body.message.data && body.subscription) {
+if (body?.message?.data && body?.subscription) {
   const operation = await arg('The payload is a PubSub event. Do you want to:', [
     {
       name: 'Copy payload to clipboard',
