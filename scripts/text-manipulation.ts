@@ -420,7 +420,7 @@ const options: Choice[] = [
     },
   },
   {
-    name: 'Remove Lines Matching',
+    name: 'Remove / Filter out Lines Matching',
     description: 'Remove lines that match the given regex',
     value: {
       key: 'removeLinesMatching',
@@ -432,7 +432,7 @@ const options: Choice[] = [
     },
   },
   {
-    name: 'Keep Lines Matching',
+    name: 'Keep / Filter in Lines Matching',
     description: 'Keep lines that match the given regex',
     value: {
       key: 'keepLinesMatching',
