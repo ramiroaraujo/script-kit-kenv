@@ -34,11 +34,11 @@ const controllers = await Promise.all(
 const endpoints = controllers
   .map((controller) => {
     const base = controller.match(/@Controller\('(.*)'\)/)?.[1] ?? '';
-    const methods = controller.matchAll(/@(Post|Put)\('?(.*)'?\)/g);
+    const methods = controller.matchAll(/@(Post|Put)\('?(.*?)'?\)/g);
     //@todo test (and fix?) for methods without a path name, not uncommon
     //@todo check for named parameters in the path, maybe forms to handle those? :(
     return [...methods].map(([, method, path]) => {
-      return { method, path: `${base}${path}` };
+      return { method, path: `${base}/${path}` };
     });
   })
   .flat();
