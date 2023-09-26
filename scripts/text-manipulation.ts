@@ -762,6 +762,6 @@ loop: while (true) {
 lastTransformations = operations;
 await cache.store('last', lastTransformations);
 
-await clipboard.writeText(clipboardText);
+await clipboard.writeText(clipboardText.toString());
 
 notify('Text transformation applied and copied to clipboard');
