@@ -6,6 +6,14 @@ import { binPath } from '../lib/bin-helper';
 // Fetch clipboard content
 const content = await clipboard.readText();
 
+//validate json
+try {
+  JSON.parse(content);
+} catch (e) {
+  notify('Clipboard content is not valid JSON');
+  exit();
+}
+
 const jq = await binPath('jq');
 
 const transform = async (text: string, query: string): Promise<string> => {
