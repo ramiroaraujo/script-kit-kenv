@@ -1,35 +1,61 @@
 // Name: ff Extract Cookies from LinkedIn
 
 import '@johnlindquist/kit';
+import { binPath } from '../lib/bin-helper';
+import { wait } from '../../../../.kit/core/utils';
+import { getEnv } from '../lib/env-helper';
 
-// Read the clipboard for cookies in JSON format
-const cookiesJson = await clipboard.readText();
+const lsof = await binPath('lsof');
+const grep = await binPath('grep');
+const awk = await binPath('awk');
 
-// Parse the JSON
-let cookies;
+const userDataDir = home('Library/Application Support/Google/Chrome');
+const tmpDataDir = '/tmp/chrome-new-session';
+const profileDir = getEnv('CHROME_PROFILE_DIR') || 'Default';
 
-try {
-  cookies = JSON.parse(cookiesJson);
-} catch (e) {
-  notify('The clipboard does not contain a valid JSON.');
-  exit();
-}
+await exec(`mkdir -p ${tmpDataDir}`);
+await exec(`rsync -a "${userDataDir}/${profileDir}/" "/tmp/chrome-new-session/${profileDir}/"`);
 
-// Filter out cookies that are not from LinkedIn or do not have the required names
-cookies = cookies.filter(
-  (cookie) =>
-    cookie.domain.indexOf('.linkedin.com') > -1 &&
-    (cookie.name === 'li_a' || cookie.name === 'li_at'),
+await exec(`open -na "Google Chrome" --args \
+--user-data-dir="${tmpDataDir}" \
+--profile-directory="${profileDir}" \
+--remote-debugging-port=9222`);
+
+await wait(500);
+
+const { stdout: pid } = await exec(
+  `${lsof} -i :9222 | ${grep} Google | ${awk} -F ' ' '{print $2}'`,
 );
 
-// Check if we have found the required cookies
-if (cookies.length === 0) {
-  notify('No LinkedIn cookies found in the provided JSON.');
+if (!pid) {
+  notify('Could not start Chrome with remote debugging enabled. Please try again.');
   exit();
 }
 
+const { data } = await get('http://localhost:9222/json/version');
+
+const puppeteer = await npm('puppeteer');
+
+const browserWSEndpoint = data.webSocketDebuggerUrl;
+
+const browser = await puppeteer.connect({ browserWSEndpoint });
+
+const page = await browser.newPage();
+await page.goto('https://www.linkedin.com/');
+
+const cookies = (await page.cookies('https://www.linkedin.com/')).reduce((acc, { name, value }) => {
+  acc[name] = { value };
+  return acc;
+}, {});
+
+browser.close();
+
+if (!cookies['li_at'] || !cookies['li_a']) {
+  notify('No LinkedIn cookies found. Please log in to LinkedIn and try again.');
+  exit();
+}
 // Construct the cookie string
-const cookieString = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
+const cookieString = `li_at=${cookies['li_at'].value}; li_a=${cookies['li_a'].value}`;
 
 // Copy the string to the clipboard
 await clipboard.writeText(cookieString);
