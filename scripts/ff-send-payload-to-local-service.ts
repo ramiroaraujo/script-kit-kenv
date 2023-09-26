@@ -11,6 +11,15 @@ const service = await FFService.init(serviceName);
 
 const port = await service.getServicePort();
 
+const baseUrl = `http://localhost:${port}`;
+
+try {
+  await get(baseUrl, { validateStatus: () => true });
+} catch (e) {
+  notify({ title: 'Service is not running', message: 'Start the service and try again' });
+  exit();
+}
+
 const { stdout: files } = await exec(
   `find "${service.getPath()}/src" -type f -name "*controller.ts"`,
 );
@@ -28,8 +37,7 @@ const controllers = await Promise.all(
 const endpoints = controllers
   .map((controller) => {
     const base = controller.match(/@Controller\('(.*)'\)/)?.[1] ?? '';
-    const methods = controller.matchAll(/@(Post|Put)\('(.*)'\)/g);
-    // @todo look for a way of matching HeaderAuthGuard if exists with the proper method
+    const methods = controller.matchAll(/@(Post|Put)\('?(.*)'?\)/g);
     return [...methods].map(([, method, path]) => {
       return { method, path: `${base}${path}` };
     });
@@ -43,15 +51,6 @@ const endpoint = await arg(
     value: e,
   })),
 );
-
-const baseUrl = `http://localhost:${port}`;
-
-try {
-  await get(baseUrl, { validateStatus: () => true });
-} catch (e) {
-  notify({ title: 'Service is not running', message: 'Start the service and try again' });
-  exit();
-}
 
 // use clipboard as payload if it's a valid json
 let payload = await clipboard.readText();
@@ -76,7 +75,11 @@ await editor({
       validateStatus: () => true,
     });
     if (status >= 400) {
-      notify({ title: `Service Error ${status}`, message: 'Check the console for more info' });
+      const message =
+        status === 403
+          ? 'Try to disable HeaderAuthGuard if applicable'
+          : 'Check the console for more info';
+      notify({ title: `Service Error ${status}`, message });
     } else {
       notify({ title: `Call successful (${status})`, message: 'Check the console for more info' });
     }
