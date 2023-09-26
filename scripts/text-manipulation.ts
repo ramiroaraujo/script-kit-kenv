@@ -595,6 +595,13 @@ const operationOptions: Choice[] = [
       key: 'listSaved',
     },
   },
+  {
+    name: 'Extract with JQ',
+    description: 'Extract data from JSON using JQ',
+    value: {
+      key: 'jq',
+    },
+  },
 ];
 
 const handleTransformation = async (text, transformation) => {
@@ -620,20 +627,26 @@ const handleTransformation = async (text, transformation) => {
   };
 };
 
+let clipboardText = await clipboard.readText();
+let operations: { name: string; params: any[] }[] = [];
+
+// Cache setup
+const cache = await new CacheHelper('text-manipulation', 'never').init();
+let last = cache.get('last') ?? [];
+const persisted = cache.get('persisted') ?? {};
+const usage = cache.get('usage') ?? {};
+const timestamps = cache.get('timestamps') ?? {};
+
+// jq script ref
+const jqScript = (await getScripts()).find(
+  (s) => s.kenv === 'script-kit-kenv' && s.command === 'extract-with-jq',
+);
+
 const runAllTransformations = (all) => {
   return all.reduce((prev, curr) => {
     return transformations[curr.name].apply(null, [prev, ...curr.params]);
   }, clipboardText);
 };
-
-let clipboardText = await clipboard.readText();
-let operations: { name: string; params: any[] }[] = [];
-const cache = await new CacheHelper('text-manipulation', 'never').init();
-
-let last = cache.get('last') ?? [];
-const persisted = cache.get('persisted') ?? {};
-const usage = cache.get('usage') ?? {};
-const timestamps = cache.get('timestamps') ?? {};
 
 loop: while (true) {
   const transformation = await arg(
@@ -659,6 +672,14 @@ loop: while (true) {
           option.description = last.map((o) => o.name).join(' > ');
         }
 
+        if (option.value.key === 'jq') {
+          try {
+            JSON.parse(clipboardText);
+          } catch (e) {
+            return null;
+          }
+        }
+
         return option;
       })
       .filter(Boolean)
@@ -677,6 +698,9 @@ loop: while (true) {
 
         if (a.value.key === 'listSaved') return -1;
         if (b.value.key === 'listSaved') return 1;
+
+        if (a.value.key === 'jq') return -1;
+        if (b.value.key === 'jq') return 1;
 
         const now = Date.now();
         const timeDecay = 3600 * 24 * 7 * 1000; // Time decay in milliseconds (e.g., 1 week)
@@ -759,6 +783,10 @@ loop: while (true) {
       }
       break;
     }
+    case 'jq':
+      await run(jqScript.filePath);
+      exit();
+      break;
     default: {
       const result = await handleTransformation(clipboardText, transformation);
       clipboardText = result.text;
