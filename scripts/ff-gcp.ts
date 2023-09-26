@@ -1,4 +1,4 @@
-// Name: FF Gcp
+// Name: FF Google Cloud Platform (gcp)
 
 import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
