@@ -1,4 +1,4 @@
-// Name: ff token
+// Name: FF Token
 // Description: Get a token impersonating a service account for requests to private services
 
 import '@johnlindquist/kit';

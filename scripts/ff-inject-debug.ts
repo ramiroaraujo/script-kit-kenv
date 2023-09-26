@@ -1,4 +1,4 @@
-// Name: ff inject debug
+// Name: FF Inject Debug
 
 import '@johnlindquist/kit';
 import { getFFLocalServices } from '../lib/ff-helper';

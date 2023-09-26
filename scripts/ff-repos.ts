@@ -1,4 +1,4 @@
-// Name: ff repos
+// Name: FF Repos
 
 import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';

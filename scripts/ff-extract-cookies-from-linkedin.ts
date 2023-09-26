@@ -1,4 +1,4 @@
-// Name: ff Extract Cookies from LinkedIn
+// Name: FF Extract Cookies from LinkedIn
 
 import '@johnlindquist/kit';
 import { binPath } from '../lib/bin-helper';

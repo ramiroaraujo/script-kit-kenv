@@ -1,4 +1,4 @@
-// Name: ff Fetch Body from Request
+// Name: FF Fetch Body from Request
 
 import '@johnlindquist/kit';
 import { selectEnv } from '../lib/ff-helper';

@@ -1,4 +1,4 @@
-// Name: Extract with jq
+// Name: Extract with Jq
 
 import '@johnlindquist/kit';
 import { binPath } from '../lib/bin-helper';

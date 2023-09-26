@@ -1,4 +1,4 @@
-// Name: convert selected images
+// Name: Convert Selected Images
 
 import '@johnlindquist/kit';
 

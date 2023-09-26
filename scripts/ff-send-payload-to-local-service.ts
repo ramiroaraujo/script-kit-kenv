@@ -1,4 +1,4 @@
-// Name: ff send payload to local service
+// Name: FF Send Payload to Local Service
 
 import '@johnlindquist/kit';
 import { getFFLocalServices } from '../lib/ff-helper';

@@ -1,4 +1,4 @@
-// Name: ff Generate JWT Token
+// Name: FF Generate JWT Token
 
 import '@johnlindquist/kit';
 import { getFFLocalServices } from '../lib/ff-helper';

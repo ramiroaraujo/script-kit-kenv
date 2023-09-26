@@ -1,4 +1,4 @@
-// Name: ff extract test envs
+// Name: FF Extract Test Envs
 
 import '@johnlindquist/kit';
 import { getFFLocalServices } from '../lib/ff-helper';

@@ -1,4 +1,4 @@
-// Name: ff pubsub payload
+// Name: FF Fetch PubSub Payload
 
 import '@johnlindquist/kit';
 import { CacheHelper, expirePresets } from '../lib/cache-helper';

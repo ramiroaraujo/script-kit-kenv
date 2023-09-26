@@ -1,4 +1,4 @@
-// Name: Delete records from Clipboard History
+// Name: Delete Records from Clipboard History
 // Description: Remove the specified number of latest records from the clipboard history and update the OS clipboard with the next latest item.
 
 import '@johnlindquist/kit';

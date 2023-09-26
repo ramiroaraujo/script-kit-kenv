@@ -1,4 +1,4 @@
-// Name: ff Inject Environment
+// Name: FF Inject Environment
 
 import '@johnlindquist/kit';
 import { getFFLocalServices, selectEnv } from '../lib/ff-helper';

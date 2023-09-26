@@ -1,4 +1,4 @@
-// Name: Open all links
+// Name: Open all Links
 
 import '@johnlindquist/kit';
 

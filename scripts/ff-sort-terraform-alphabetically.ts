@@ -1,4 +1,4 @@
-// Name: ff sort terraform alphabetically
+// Name: FF Sort Terraform Alphabetically
 
 import '@johnlindquist/kit';
 

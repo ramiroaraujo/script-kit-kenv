@@ -1,4 +1,4 @@
-// Name: ff Merged to Prod
+// Name: FF Merged to Prod
 
 import '@johnlindquist/kit';
 import { binPath } from '../lib/bin-helper';
