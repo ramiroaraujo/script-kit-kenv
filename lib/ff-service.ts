@@ -8,6 +8,7 @@ await npm('yaml');
 export class FFService {
   private path: string;
   private isNestService: boolean;
+
   private constructor(
     private readonly folder: string,
     base: string,
@@ -23,7 +24,7 @@ export class FFService {
     if (!(await isDir(path))) {
       throw new Error(`Could not find ${path}`);
     }
-    let isNest = false;
+    let isNest: boolean;
 
     try {
       const jsonPath = home(`${path}/package.json`);
@@ -49,6 +50,22 @@ export class FFService {
     const path = `${this.path}/deployment/terraform/terraform.tfvars`;
     const content = await readFile(path, 'utf-8');
     return content.match(/service_name\s*=\s*"(.*)"/)[1];
+  }
+
+  async getServicePort() {
+    const dockerComposeFile = `${this.path}/docker-compose.yml`;
+    const content = await readFile(dockerComposeFile, 'utf-8');
+    const dockerCompose = yaml.parse(content);
+    const serviceName = await this.getServiceName();
+    const ports =
+      dockerCompose.services[serviceName]?.ports ??
+      dockerCompose.services[Object.keys(dockerCompose.services)[0]]?.ports;
+    const port = ports
+      .find((port) => {
+        return port.match(/.*:8080$/);
+      })
+      ?.replace(/^(\d+):8080$/, '$1');
+    return Number(port);
   }
 
   async getEnvs() {
