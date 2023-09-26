@@ -219,7 +219,8 @@ const transformations = {
     text
       .trim()
       .split('\n')
-      .map((line) => Number(line.trim()))
+      .filter((line) => line.trim() !== '')
+      .map((line) => parseFloat(line.trim()))
       .reduce((total, num) => total + num, 0),
   base64Decode: (text) => Buffer.from(text, 'base64').toString('utf-8'),
   jsonPrettyPrint: (text) => JSON.stringify(JSON.parse(text), null, 2),
