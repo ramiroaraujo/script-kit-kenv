@@ -570,11 +570,14 @@ const transformations = [
   },
 ];
 
-// map functions to keys
-const functions = transformations.reduce((prev, curr) => {
-  prev[curr.option.value.key] = curr.function;
-  return prev;
-}, {});
+// map functions to keys, with an extra noop function
+const functions = transformations.reduce(
+  (prev, curr) => {
+    prev[curr.option.value.key] = curr.function;
+    return prev;
+  },
+  { noop: (text) => text },
+);
 
 // map options
 const options: Choice[] = transformations.map((o) => o.option);
@@ -824,6 +827,7 @@ loop: while (true) {
         value: clipboardText,
         onSubmit: (value) => {
           clipboardText = value;
+          operations.push({ name: 'noop', params: [null] });
         },
       });
       break;
