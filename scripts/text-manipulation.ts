@@ -570,7 +570,7 @@ const operationOptions: Choice[] = [
     },
   },
   {
-    name: 'Perform Last Transformations',
+    name: 'Apply Last Transformations',
     value: {
       key: 'last',
     },
