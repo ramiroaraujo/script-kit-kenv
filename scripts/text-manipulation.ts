@@ -211,8 +211,6 @@ const transformations = {
     const lines = text.split('\n');
     return lines.map((line, index) => `${index + 1}. ${line}`).join('\n');
   },
-  base64Encode: (text) => Buffer.from(text).toString('base64'),
-  finish: (text) => text,
   countLines: (text) => text.split('\n').length,
   countWords: (text) => text.trim().split(/\s+/).length,
   countCharacters: (text) => text.length,
@@ -223,10 +221,6 @@ const transformations = {
       .filter((line) => line.trim() !== '')
       .map((line) => parseFloat(line.trim()))
       .reduce((total, num) => total + num, 0),
-  base64Decode: (text) => Buffer.from(text, 'base64').toString('utf-8'),
-  jsonPrettyPrint: (text) => JSON.stringify(JSON.parse(text), null, 2),
-  jsonMinify: (text) => JSON.stringify(JSON.parse(text)),
-  xmlPrettyPrint: (text) => xmlBeautifier(text),
   limitLines: (text, limit) => {
     let [limitNumber, offset] = limit.split(',');
     limitNumber = parseInt(limitNumber);
@@ -236,6 +230,11 @@ const transformations = {
       .slice(offset, offset + limitNumber)
       .join('\n');
   },
+  base64Encode: (text) => Buffer.from(text).toString('base64'),
+  base64Decode: (text) => Buffer.from(text, 'base64').toString('utf-8'),
+  jsonMinify: (text) => JSON.stringify(JSON.parse(text)),
+  jsonPrettyPrint: (text) => JSON.stringify(JSON.parse(text), null, 2),
+  xmlPrettyPrint: (text) => xmlBeautifier(text),
 };
 
 const options: Choice[] = [
