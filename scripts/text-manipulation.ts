@@ -339,7 +339,7 @@ const transformations = [
   },
   {
     option: {
-      name: 'Remove Wrapping',
+      name: 'Remove Wrapping (unwrap)',
       description: 'Remove wrapping characters from each line',
       value: { key: 'removeWrapping' },
     },
@@ -570,13 +570,13 @@ const transformations = [
   },
 ];
 
-// map functions to keys, with an extra noop function
+// map functions to keys, with an extra manualEdit (no op) function
 const functions = transformations.reduce(
   (prev, curr) => {
     prev[curr.option.value.key] = curr.function;
     return prev;
   },
-  { noop: (text) => text },
+  { manualEdit: (text) => text },
 );
 
 // map options
@@ -827,7 +827,7 @@ loop: while (true) {
         value: clipboardText,
         onSubmit: (value) => {
           clipboardText = value;
-          operations.push({ name: 'noop', params: [null] });
+          operations.push({ name: 'manualEdit', params: [null] });
         },
       });
       break;
