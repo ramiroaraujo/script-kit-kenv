@@ -687,7 +687,7 @@ loop: while (true) {
       hint: operations.length
         ? 'Ops: ' + operations.map((o) => functions['reverseCamelCase'](o.name)).join(' > ')
         : '',
-      onEscape: () => {},
+      onEscape: () => {}, //dont close on escape
       flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
     },
     [...operationOptions, ...options]
@@ -879,4 +879,4 @@ await cache.store('last', operations);
 
 await clipboard.writeText(clipboardText.toString());
 
-notify('Text transformation applied and copied to clipboard');
+notify({ title: 'Text transformation applied!', message: 'Text copied to clipboard' });
