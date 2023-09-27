@@ -4,10 +4,11 @@
 
 import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
-import { Choice } from '../../../../.kit';
+import { Choice, PromptConfig } from '../../../../.kit';
 
+type TransformationValue = { key: string; parameter?: PromptConfig };
 type Transformation = {
-  option: Choice;
+  option: Choice & { value?: TransformationValue };
   function: (text: string, ...params: string[]) => string | number;
 };
 
@@ -626,12 +627,13 @@ const operationOptions: Choice[] = [
   },
 ];
 
-const handleTransformation = async (text, transformation) => {
-  const { key, parameter } = transformation;
-  const paramValue = parameter
+const handleTransformation = async (text: string, transformation: TransformationValue) => {
+  const { key, parameter: config } = transformation;
+  const paramValue = config
     ? await arg(
         {
-          input: parameter.defaultValue,
+          input: config.defaultValue,
+          hint: config.description,
           flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
         },
         (input) => {
