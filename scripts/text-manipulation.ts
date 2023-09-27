@@ -89,11 +89,12 @@ const transformations: Transformation[] = [
         parameter: {
           name: 'Pattern',
           description: 'Enter a regex pattern to capture',
-          defaultValue: '.+',
+          defaultValue: '',
         },
       },
     },
     function: (text, regex) => {
+      if (regex.length === 0) return text;
       const lines = text.split('\n');
       const pattern = new RegExp(regex);
       return lines
@@ -148,7 +149,7 @@ const transformations: Transformation[] = [
         parameter: {
           name: 'Separator',
           description: 'Enter a separator to join lines',
-          defaultValue: ',',
+          defaultValue: ', ',
         },
       },
     },
@@ -195,7 +196,7 @@ const transformations: Transformation[] = [
         parameter: {
           name: 'Regex',
           description: 'Enter a regex to match lines to keep',
-          defaultValue: '.+',
+          defaultValue: '',
         },
       },
     },
@@ -335,7 +336,7 @@ const transformations: Transformation[] = [
       },
     },
     function: (text, regex) => {
-      const pattern = new RegExp(regex, 'g');
+      const pattern = new RegExp(regex);
       const lines = text.split('\n');
       return lines.map((line) => line.replace(pattern, '')).join('\n');
     },
