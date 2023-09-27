@@ -829,6 +829,11 @@ loop: while (true) {
       await editor({
         value: clipboardText,
         onSubmit: (value) => {
+          if (value === clipboardText) {
+            notify({ title: 'Transformed text is the same', message: 'No changes applied' });
+            return;
+          }
+
           clipboardText = value;
           operations.push({ name: 'manualEdit', params: [null] });
         },
@@ -841,7 +846,13 @@ loop: while (true) {
       //don't transform if result is empty
       if (/^\s*$/.test(result.text)) {
         notify({ title: 'Transformed text is empty', message: 'No changes applied' });
-        continue;
+        break;
+      }
+
+      //don't store operation if result is the same as previous
+      if (result.text === clipboardText) {
+        notify({ title: 'Transformed text is the same', message: 'No changes applied' });
+        break;
       }
 
       clipboardText = result.text;
