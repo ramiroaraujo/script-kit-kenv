@@ -830,6 +830,13 @@ loop: while (true) {
     }
     default: {
       const result = await handleTransformation(clipboardText, transformation);
+
+      //don't transform if result is empty
+      if (/^\s*$/.test(result.text)) {
+        notify({ title: 'Transformed text is empty', message: 'No changes applied' });
+        continue;
+      }
+
       clipboardText = result.text;
 
       //save operations
