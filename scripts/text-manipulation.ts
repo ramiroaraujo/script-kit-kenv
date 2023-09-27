@@ -785,6 +785,7 @@ loop: while (true) {
       break;
     }
     case 'jq':
+      await clipboard.writeText(clipboardText.toString());
       await run(jqScript.filePath);
       exit();
       break;
