@@ -595,6 +595,13 @@ const operationOptions: Choice[] = [
     },
   },
   {
+    name: 'Manual Edit',
+    description: 'Manually edit the transformed text',
+    value: {
+      key: 'edit',
+    },
+  },
+  {
     name: 'Extract with JQ',
     description: 'Extract data from JSON using JQ',
     value: {
@@ -699,6 +706,9 @@ loop: while (true) {
         if (a.value.key === 'listSaved') return -1;
         if (b.value.key === 'listSaved') return 1;
 
+        if (a.value.key === 'edit') return -1;
+        if (b.value.key === 'edit') return 1;
+
         if (a.value.key === 'jq') return -1;
         if (b.value.key === 'jq') return 1;
 
@@ -788,6 +798,15 @@ loop: while (true) {
       await run(jqScript.filePath);
       exit();
       break;
+    case 'edit': {
+      await editor({
+        value: clipboardText,
+        onSubmit: (value) => {
+          clipboardText = value;
+        },
+      });
+      break;
+    }
     default: {
       const result = await handleTransformation(clipboardText, transformation);
       clipboardText = result.text;
@@ -805,8 +824,7 @@ loop: while (true) {
 }
 
 //store last transformations
-last = operations;
-await cache.store('last', last);
+await cache.store('last', operations);
 
 await clipboard.writeText(clipboardText.toString());
 
