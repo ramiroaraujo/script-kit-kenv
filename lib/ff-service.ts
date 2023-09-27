@@ -76,6 +76,6 @@ export class FFService {
     const testDockerFile = `${this.path}/deployment/test/docker-compose.test.yml`;
     const content = await readFile(testDockerFile, 'utf-8');
     const config = yaml.parse(content);
-    return config.services.sut.environment;
+    return config?.services?.sut?.environment || {};
   }
 }
