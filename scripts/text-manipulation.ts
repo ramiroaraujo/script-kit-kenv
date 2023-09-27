@@ -6,8 +6,6 @@ import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
 import { Choice } from '../../../../.kit';
 
-const xmlBeautifier = await npm('xml-beautifier');
-
 type Transformation = {
   option: Choice;
   function: (text: string, ...params: string[]) => string | number;
@@ -563,14 +561,6 @@ const transformations: Transformation[] = [
         })
         .join('\n');
     },
-  },
-  {
-    option: {
-      name: 'XML Pretty Print',
-      description: 'Formats XML strings for better readability',
-      value: { key: 'xmlPrettyPrint' },
-    },
-    function: (text) => xmlBeautifier(text) as string,
   },
 ];
 
