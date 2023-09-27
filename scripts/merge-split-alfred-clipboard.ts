@@ -3,14 +3,20 @@
 
 import '@johnlindquist/kit';
 
+import { getEnv } from '../lib/env-helper';
+
 const Database = await npm('better-sqlite3');
-const databasePath = home('Library/Application Support/Alfred/Databases/clipboard.alfdb');
-if (!(await pathExists(databasePath))) {
-  notify('Alfred clipboard database not found');
+let db;
+try {
+  const databasePath = getEnv('ALFRED_DATABASE_PATH');
+  db = new Database(databasePath);
+} catch (e) {
+  notify({
+    title: 'Clipboard history database not found',
+    message: 'Try looking in Alfred pref -> Advanced -> Reveal in Finder',
+  });
   exit();
 }
-
-const db = new Database(databasePath);
 
 const queryClipboard = async (sql, params) => {
   const stmt = db.prepare(sql);

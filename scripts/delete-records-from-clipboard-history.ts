@@ -2,12 +2,18 @@
 // Description: Remove the specified number of latest records from the clipboard history and update the OS clipboard with the next latest item.
 
 import '@johnlindquist/kit';
+import { getEnv } from '../lib/env-helper';
 
 const Database = await npm('better-sqlite3');
-const databasePath = home('Library/Application Support/Alfred/Databases/clipboard.alfdb');
-const db = new Database(databasePath);
-if (!(await pathExists(databasePath))) {
-  notify('Alfred clipboard database not found');
+let db;
+try {
+  const databasePath = getEnv('ALFRED_DATABASE_PATH');
+  db = new Database(databasePath);
+} catch (e) {
+  notify({
+    title: 'Clipboard history database not found',
+    message: 'Try looking in Alfred pref -> Advanced -> Reveal in Finder',
+  });
   exit();
 }
 
