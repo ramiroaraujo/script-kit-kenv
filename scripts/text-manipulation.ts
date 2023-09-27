@@ -683,7 +683,10 @@ loop: while (true) {
   const transformation = await arg(
     {
       placeholder: 'Choose a text transformation',
-      hint: operations.map((o) => o.name).join(' > '),
+      hint: operations.length
+        ? 'Ops: ' + operations.map((o) => functions['reverseCamelCase'](o.name)).join(' > ')
+        : '',
+      onEscape: () => {},
     },
     [...operationOptions, ...options]
       .map((option) => {
