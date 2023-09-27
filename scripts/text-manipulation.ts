@@ -643,8 +643,14 @@ const handleTransformation = async (text, transformation) => {
         },
       )
     : null;
+  let transform: string;
+  try {
+    transform = functions[key](text, paramValue).toString();
+  } catch (e) {
+    transform = text;
+  }
   return {
-    text: functions[key](text, paramValue).toString(),
+    text: transform,
     name: key,
     paramValue,
     perform: flag.perform,
