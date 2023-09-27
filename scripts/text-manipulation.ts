@@ -638,6 +638,7 @@ const handleTransformation = async (text, transformation) => {
     ? await arg(
         {
           input: parameter.defaultValue,
+          flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
         },
         (input) => {
           try {
@@ -652,6 +653,7 @@ const handleTransformation = async (text, transformation) => {
     text: functions[key](text, paramValue),
     name: key,
     paramValue,
+    perform: flag.perform,
   };
 };
 
@@ -845,6 +847,9 @@ loop: while (true) {
     }
     default: {
       const result = await handleTransformation(clipboardText, transformation);
+
+      //finish if cmd+enter was pressed in the params prompt
+      if (!performFlag && result.perform) performFlag = true;
 
       //don't transform if result is empty
       if (/^\s*$/.test(result.text)) {
