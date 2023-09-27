@@ -680,6 +680,7 @@ const runAllTransformations = (all) => {
 
 // eslint-disable-next-line no-constant-condition
 loop: while (true) {
+  let performFlag: boolean = false;
   const transformation = await arg(
     {
       placeholder: 'Choose a text transformation',
@@ -687,6 +688,7 @@ loop: while (true) {
         ? 'Ops: ' + operations.map((o) => functions['reverseCamelCase'](o.name)).join(' > ')
         : '',
       onEscape: () => {},
+      flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
     },
     [...operationOptions, ...options]
       .map((option) => {
@@ -769,6 +771,7 @@ loop: while (true) {
         };
       }),
   );
+  if (flag.perform) performFlag = true;
 
   switch (transformation.key) {
     case 'finish':
@@ -867,6 +870,8 @@ loop: while (true) {
       await cache.store('timestamps', timestamps);
     }
   }
+  //finish if cmd+enter was pressed
+  if (performFlag) break;
 }
 
 //store last transformations
