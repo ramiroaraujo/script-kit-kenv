@@ -10,23 +10,19 @@ const gcloud = await binPath('gcloud');
 const folders = await getFFLocalServices();
 const folder = await arg('Select a folder to inject the environment', folders);
 
-// 2. Prompt for an environment
 const env = await selectEnv();
 
-// 3. Get the service name
 const service = await FFService.init(folder);
 const serviceName = await service.getServiceName();
 
-// 4. Fetch the environment variables of the instance
+// Fetch the environment variables of the instance
 const { stdout: cloudRunEnv } = await exec(
   `${gcloud} run services describe ${serviceName} --platform=managed --project=${env} --format="json" --region=us-central1`,
 );
 const envVars = JSON.parse(cloudRunEnv).spec.template.spec.containers[0].env;
 
-// 5. Overwrite the variables in config.env
+// Make a copy of the original config.env, without overwriting it if it already exists
 const configPath = `${service.getPath()}/config.env`;
-
-// 6. Make a copy of the original config.env
 const backupPath = `${service.getPath()}/config.bak.env`;
 
 if (!(await pathExists(backupPath))) {
@@ -46,16 +42,16 @@ if ('USE_GOOGLE_S2S_AUTH' in envVarsDict) {
   envVarsDict['USE_GOOGLE_S2S_AUTH'] = 'false';
 }
 
+// Don't override these urls
 const allowedUrls = new Set(['FF_UI_V2_URL', 'JOB_BOARD_UI_URL', 'UI2_BASE_URL', 'V4_API_URL']);
-let urlTail = '';
 
-for (const [key, value] of Object.entries(envVarsDict)) {
-  if (key.endsWith('_URL') && value.includes('.a.run.app')) {
-    urlTail = value.match(/-([a-z0-9]+-uc\.a\.run\.app)$/)[1];
-    break;
-  }
-}
+// Get the url tail common to all services, e.g. 5f2a1c1f-uc.a.run.app
+const urlTail =
+  Object.entries(envVarsDict)
+    .find(([key, value]) => key.endsWith('_URL') && value.includes('.a.run.app'))?.[1]
+    .match(/-([a-z0-9]+-uc\.a\.run\.app)$/)?.[1] || '';
 
+// Replace all urls with the tail with http://<subdomain>:8080
 for (const [key, value] of Object.entries(envVarsDict)) {
   if (key.endsWith('_URL') && !allowedUrls.has(key) && value.endsWith(urlTail)) {
     const subdomain = value.split(`https://`)[1].split(`-${urlTail}`)[0];
@@ -63,7 +59,7 @@ for (const [key, value] of Object.entries(envVarsDict)) {
   }
 }
 
-// 7. Read the original file line by line and replace the values as needed
+// Read the original file line by line and replace the values as needed
 const configLines = (await readFile(configPath, 'utf-8')).split('\n');
 const newConfigLines = [];
 
@@ -91,7 +87,7 @@ for (const [key, value] of Object.entries(envVarsDict)) {
   newConfigLines.push(`${key}=${value}`);
 }
 
-// 8. Write the updated environment variables back to config.env
+// Write the updated environment variables back to config.env
 const newConfig = newConfigLines.join('\n');
 await writeFile(configPath, newConfig);
 
