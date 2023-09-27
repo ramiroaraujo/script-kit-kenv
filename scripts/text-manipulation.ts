@@ -8,7 +8,12 @@ import { Choice } from '../../../../.kit';
 
 const xmlBeautifier = await npm('xml-beautifier');
 
-const transformations = [
+type Transformation = {
+  option: Choice;
+  function: (text: string, ...params: string[]) => string | number;
+};
+
+const transformations: Transformation[] = [
   {
     option: {
       name: 'Append Text to All Lines',
@@ -228,9 +233,8 @@ const transformations = [
       },
     },
     function: (text, limit) => {
-      let [limitNumber, offset] = limit.split(',');
-      limitNumber = parseInt(limitNumber);
-      offset = offset ? parseInt(offset) : 0;
+      const [limitNumber, optionalOffset] = limit.split(',').map((n) => parseInt(n));
+      const offset = optionalOffset ?? 0;
       return text
         .split('\n')
         .slice(offset, offset + limitNumber)
@@ -566,7 +570,7 @@ const transformations = [
       description: 'Formats XML strings for better readability',
       value: { key: 'xmlPrettyPrint' },
     },
-    function: (text) => xmlBeautifier(text),
+    function: (text) => xmlBeautifier(text) as string,
   },
 ];
 
@@ -580,7 +584,7 @@ const functions = transformations.reduce(
 );
 
 // map options
-const options: Choice[] = transformations.map((o) => o.option);
+const options = transformations.map((o) => o.option as Choice);
 
 // main (non transform) operations
 const operationOptions: Choice[] = [
@@ -882,6 +886,7 @@ loop: while (true) {
 //store last transformations
 await cache.store('last', operations);
 
+//always toString since sending a number to clipboard.writeText will throw error
 await clipboard.writeText(clipboardText.toString());
 
 notify({ title: 'Text transformation applied!', message: 'Text copied to clipboard' });
