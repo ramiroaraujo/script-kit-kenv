@@ -654,7 +654,7 @@ const handleTransformation = async (text, transformation) => {
       )
     : null;
   return {
-    text: functions[key](text, paramValue),
+    text: functions[key](text, paramValue).toString(),
     name: key,
     paramValue,
     perform: flag.perform,
@@ -678,9 +678,9 @@ const jqScript = (await getScripts()).find(
   (s) => s.kenv === 'script-kit-kenv' && s.command === 'extract-with-jq',
 );
 
-const runAllTransformations = (all) => {
+const runAllTransformations = (all): string => {
   return all.reduce((prev, curr) => {
-    return functions[curr.name].apply(null, [prev, ...curr.params]);
+    return functions[curr.name].apply(null, [prev, ...curr.params]).toString();
   }, clipboardText);
 };
 
@@ -830,7 +830,7 @@ loop: while (true) {
       break;
     }
     case 'jq':
-      await clipboard.writeText(clipboardText.toString());
+      await clipboard.writeText(clipboardText);
       await run(jqScript.filePath);
       exit();
       break;
@@ -886,7 +886,6 @@ loop: while (true) {
 //store last transformations
 await cache.store('last', operations);
 
-//always toString since sending a number to clipboard.writeText will throw error
-await clipboard.writeText(clipboardText.toString());
+await clipboard.writeText(clipboardText);
 
 notify({ title: 'Text transformation applied!', message: 'Text copied to clipboard' });
