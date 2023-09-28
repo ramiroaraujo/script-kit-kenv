@@ -32,7 +32,7 @@ if (!pid) {
   exit();
 }
 
-const { data } = await get('http://localhost:9222/json/version');
+const { data } = await get('http://127.0.0.1:9222/json/version');
 
 const puppeteer = await npm('puppeteer');
 
