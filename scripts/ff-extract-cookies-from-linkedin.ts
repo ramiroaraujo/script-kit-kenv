@@ -16,12 +16,15 @@ const profileDir = getEnv('CHROME_PROFILE_DIR', 'Default');
 await exec(`mkdir -p ${tmpDataDir}`);
 await exec(`rsync -a "${userDataDir}/${profileDir}/" "/tmp/chrome-new-session/${profileDir}/"`);
 
+await wait(200);
+
 await exec(`open -na "Google Chrome" --args \
 --user-data-dir="${tmpDataDir}" \
 --profile-directory="${profileDir}" \
 --remote-debugging-port=9222`);
 
-await wait(500);
+notify('Waiting for Chrome to start...');
+await wait(2000);
 
 const { stdout: pid } = await exec(
   `${lsof} -i :9222 | ${grep} Google | ${awk} -F ' ' '{print $2}'`,
