@@ -4,7 +4,7 @@ import '@johnlindquist/kit';
 import { binPath } from '../lib/bin-helper';
 import { FFService } from '../lib/ff-service';
 
-const gh = await binPath('gh');
+const gh = binPath('gh');
 
 // 1. Fetch GitHub PR URLs from the clipboard
 const prURLs = (await clipboard.readText()).split('\n');

@@ -5,9 +5,9 @@ import { binPath } from '../lib/bin-helper';
 import { wait } from '../../../../.kit/core/utils';
 import { getEnv } from '../lib/env-helper';
 
-const lsof = await binPath('lsof');
-const grep = await binPath('grep');
-const awk = await binPath('awk');
+const lsof = binPath('lsof');
+const grep = binPath('grep');
+const awk = binPath('awk');
 
 const userDataDir = home('Library/Application Support/Google/Chrome');
 const tmpDataDir = '/tmp/chrome-new-session';

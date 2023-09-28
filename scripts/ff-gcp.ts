@@ -6,7 +6,7 @@ import { getEnv } from '../lib/env-helper';
 import { binPath } from '../lib/bin-helper';
 import { selectEnv } from '../lib/ff-helper';
 
-const gcloud = await binPath('gcloud');
+const gcloud = binPath('gcloud');
 
 const chromeProfile = getEnv('CHROME_PROFILE', 'Default');
 

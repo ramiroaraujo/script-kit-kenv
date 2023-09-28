@@ -1,17 +1,18 @@
 import { getEnv } from './env-helper';
+import * as fs from 'fs';
 
 const commonBinPaths = ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin'];
 
-export const binPath = async (binName: string) => {
+export const binPath = (binName: string) => {
   //check if bin exists in common paths
   for (const path of commonBinPaths) {
-    if (await pathExists(`${path}/${binName}`)) {
+    if (fs.existsSync(`${path}/${binName}`)) {
       return `${path}/${binName}`;
     }
   }
   //check in env
-  for await (const path of getEnv('PATH').split(':')) {
-    if (await pathExists(`${path}/${binName}`)) {
+  for (const path of getEnv('PATH').split(':')) {
+    if (fs.existsSync(`${path}/${binName}`)) {
       return `${path}/${binName}`;
     }
   }

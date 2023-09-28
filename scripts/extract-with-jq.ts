@@ -14,7 +14,7 @@ try {
   exit();
 }
 
-const jq = await binPath('jq');
+const jq = binPath('jq');
 
 const transform = async (text: string, query: string): Promise<string> => {
   const { stdout, failed } = await exec(`${jq} ${query}`, {

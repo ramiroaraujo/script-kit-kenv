@@ -8,7 +8,7 @@ import { selectEnv } from '../lib/ff-helper';
 
 const cache = new CacheHelper('ff-tokens', '1d');
 
-const gcloud = await binPath('gcloud');
+const gcloud = binPath('gcloud');
 
 //select a project (no prod, no service account impersonation on prod)
 const env = await selectEnv(true);

@@ -5,7 +5,7 @@ import { getFFLocalServices, selectEnv } from '../lib/ff-helper';
 import { FFService } from '../lib/ff-service';
 import { binPath } from '../lib/bin-helper';
 
-const gcloud = await binPath('gcloud');
+const gcloud = binPath('gcloud');
 
 const folders = await getFFLocalServices();
 const folder = await arg('Select a folder to inject the environment', folders);

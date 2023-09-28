@@ -8,9 +8,9 @@ import { FFService } from '../lib/ff-service';
 
 const dayjs = await npm('dayjs');
 
-const gcloud = await binPath('gcloud');
-const jq = await binPath('jq');
-const date = await binPath('gdate');
+const gcloud = binPath('gcloud');
+const jq = binPath('jq');
+const date = binPath('gdate');
 
 const cache = new CacheHelper();
 

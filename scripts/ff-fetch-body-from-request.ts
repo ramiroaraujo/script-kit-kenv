@@ -25,7 +25,7 @@ type Request = {
 
 type Params = { [key: string]: string } & { query: object };
 
-const gcloud = await binPath('gcloud');
+const gcloud = binPath('gcloud');
 
 //don't init cache yet, we don't know the env
 const cache = new CacheHelper().setDefaultExpires('1w');
