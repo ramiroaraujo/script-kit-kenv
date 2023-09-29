@@ -25,17 +25,22 @@ export class ClipboardService {
 
   getLatest(count: number) {
     const sql = `SELECT ROWID, *
-                 FROM clipboard
-                 WHERE dataType = 0
-                 order by ROWID desc
-                 LIMIT ?`;
+                     FROM clipboard
+                     WHERE dataType = 0
+                     order by ROWID desc
+                     LIMIT ?`;
     return this.db.prepare(sql).all(count) as ClipboardItem[];
   }
 
   deleteLatest(count: number) {
     const sql = `DELETE
-                 FROM clipboard
-                 WHERE ROWID IN (SELECT ROWID FROM clipboard WHERE dataType = 0 ORDER BY ROWID DESC LIMIT ?)`;
+                     FROM clipboard
+                     WHERE ROWID IN (SELECT ROWID
+                                     FROM clipboard
+                                     WHERE dataType = 0
+                                     ORDER BY ROWID DESC
+                                     LIMIT ?)`;
+
     return this.db.prepare(sql).run(count);
   }
 
