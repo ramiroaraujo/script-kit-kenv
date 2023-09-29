@@ -1,6 +1,6 @@
 // Name: Text Manipulation
 // Description: Transform clipboard text based on user-selected options
-// Shortcut: cmd+shift+c
+// Shortcut: cmd+shift+x
 
 import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
