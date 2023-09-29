@@ -2,42 +2,45 @@
 // Description: Remove the specified number of latest records from the clipboard history and update the OS clipboard with the next latest item.
 
 import '@johnlindquist/kit';
-import { getEnv } from '../lib/env-helper';
+import { ClipboardService } from '../lib/clipboard-service';
 
-const Database = await npm('better-sqlite3');
-let db;
-try {
-  const databasePath = getEnv('ALFRED_DATABASE_PATH');
-  db = new Database(databasePath);
-} catch (e) {
-  notify({
-    title: 'Clipboard history database not found',
-    message: 'Try looking in Alfred pref -> Advanced -> Reveal in Finder',
-  });
+const db = new ClipboardService();
+
+const input = await arg({
+  placeholder: 'Enter the number of latest records to delete:',
+});
+
+const count = Number(input);
+
+if (isNaN(count)) {
+  notify('Please enter a valid number.');
   exit();
 }
 
-const queryClipboard = async (sql, params = []) => {
-  return db.prepare(sql).all(...params);
-};
+const items = db.getLatest(count + 1);
 
-const deleteRecords = async (count) => {
-  const sql = `DELETE FROM clipboard WHERE ROWID IN (SELECT ROWID FROM clipboard WHERE dataType = 0 ORDER BY ROWID DESC LIMIT ?)`;
-  db.prepare(sql).run(count);
-};
+if (items.length <= 1) {
+  notify(
+    items.length === 1
+      ? { title: 'Not deleting anything', message: 'Only one record in the clipboard history.' }
+      : { title: 'Not deleting anything', message: 'No records in the clipboard history.' },
+  );
+  exit();
+}
 
-const getLatestClipboard = async () => {
-  const sql = `SELECT item FROM clipboard WHERE dataType = 0 ORDER BY ROWID DESC LIMIT 1`;
-  const result = await queryClipboard(sql);
-  return result.length > 0 ? result[0].item : '';
-};
+if (items.length < count) {
+  notify({
+    title: 'Not enough records',
+    message: `There are only ${items.length} records. Will delete all but the last one.`,
+  });
+}
 
-const count = parseInt(await arg('Enter the number of latest records to delete:'));
-await deleteRecords(count);
+const [last, ...toDelete] = items.reverse();
 
-const latestClipboard = await getLatestClipboard();
-await clipboard.writeText(latestClipboard);
-
-notify(`${count} records removed from clipboard history. OS clipboard updated.`);
+db.deleteLatest(toDelete.length);
 
 db.close();
+
+await clipboard.writeText(last.item);
+
+notify(`${toDelete.length} records removed from clipboard history. OS clipboard updated.`);
