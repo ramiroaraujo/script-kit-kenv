@@ -6,9 +6,27 @@ import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
 import { Choice, PromptConfig } from '../../../../.kit';
 
-type TransformationValue = { key: string; parameter?: PromptConfig };
+// Cache setup
+const cache = await new CacheHelper('text-manipulation', 'never').init();
+let last: Operation[] = cache.get('last') ?? [];
+const persisted = cache.get('persisted') ?? {};
+const usage = cache.get('usage') ?? {};
+const timestamps = cache.get('timestamps') ?? {};
+
+type Operation = { name: string; params: (string | number)[] };
+type TransformedOperation = {
+  text: string;
+  operation: Operation[];
+};
+type TransformValue = {
+  key: string;
+  type?: 'prompt' | 'run';
+  parameter?: PromptConfig;
+  operations?: Operation[];
+};
+type TransformChoice = Choice & { value?: TransformValue };
 type Transformation = {
-  option: Choice & { value?: TransformationValue };
+  option: TransformChoice;
   function: (text: string, ...params: string[]) => string | number;
 };
 
@@ -572,14 +590,26 @@ const functions = transformations.reduce(
     prev[curr.option.value.key] = curr.function;
     return prev;
   },
-  { manualEdit: (text) => text },
+  { manualEdit: (text: string) => text },
 );
 
 // map options
-const options = transformations.map((o) => o.option as Choice);
+const options = transformations.map((o) => o.option as TransformChoice);
+
+const savedTransformations = Object.keys(persisted).map((name) => {
+  return {
+    name: functions['reverseCamelCase'](name),
+    description: persisted[name].map(({ name }) => name).join(' > '),
+    value: {
+      key: name,
+      type: 'run',
+      operations: persisted[name],
+    },
+  } as TransformChoice;
+});
 
 // main (non transform) operations
-const operationOptions: Choice[] = [
+const operationOptions: TransformChoice[] = [
   {
     name: 'Select or Type a Transformation to Perform',
     disableSubmit: true,
@@ -628,7 +658,7 @@ const operationOptions: Choice[] = [
   },
 ];
 
-const handleTransformation = async (text: string, transformation: TransformationValue) => {
+const handleTransformation = async (text: string, transformation: TransformValue) => {
   const { key, parameter: config } = transformation;
   const paramValue = config
     ? await arg(
@@ -654,10 +684,14 @@ const handleTransformation = async (text: string, transformation: Transformation
   }
   return {
     text: transform,
-    name: key,
-    paramValue,
+    operation: [
+      {
+        name: key,
+        params: [paramValue],
+      },
+    ],
     perform: flag.perform,
-  };
+  } as TransformedOperation & { perform: boolean };
 };
 
 let clipboardText = await clipboard.readText();
@@ -665,28 +699,26 @@ let clipboardText = await clipboard.readText();
 // store performed operations
 let operations: { name: string; params: unknown[] }[] = [];
 
-// Cache setup
-const cache = await new CacheHelper('text-manipulation', 'never').init();
-let last = cache.get('last') ?? [];
-const persisted = cache.get('persisted') ?? {};
-const usage = cache.get('usage') ?? {};
-const timestamps = cache.get('timestamps') ?? {};
-
 // jq script ref
 const jqScript = (await getScripts()).find(
   (s) => s.kenv === 'script-kit-kenv' && s.command === 'extract-with-jq',
 );
 
-const runAllTransformations = (all): string => {
-  return all.reduce((prev, curr) => {
-    return functions[curr.name].apply(null, [prev, ...curr.params]).toString();
-  }, clipboardText);
+const runAllTransformations = (input: string, operations: Operation[]) => {
+  return operations.reduce(
+    (prev, curr) => {
+      prev.text = functions[curr.name].apply(null, [prev.text, ...curr.params]).toString();
+      prev.operation.push(curr);
+      return prev;
+    },
+    { text: input, operation: [] } as TransformedOperation,
+  );
 };
 
 // eslint-disable-next-line no-constant-condition
 loop: while (true) {
   let performFlag: boolean = false;
-  const transformation = await arg(
+  const transformation = await arg<TransformValue>(
     {
       placeholder: 'Choose a text transformation',
       hint: operations.length
@@ -695,7 +727,7 @@ loop: while (true) {
       onEscape: () => {}, //dont close on escape
       flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
     },
-    [...operationOptions, ...options]
+    [...operationOptions, ...options, ...savedTransformations]
       .map((option) => {
         // hide init if there are already operations
         if (option.value.key === 'init' && operations.length) return null;
@@ -765,8 +797,10 @@ loop: while (true) {
           ...option,
           preview: () => {
             try {
-              if (option.value.key === 'last')
-                return md(`<pre>${runAllTransformations(last)}</pre>`);
+              if (option.value.key === 'last') {
+                const result = runAllTransformations(clipboardText, last);
+                return md(`<pre>${result.text}</pre>`);
+              }
               if (option.value['parameter']) throw '';
               return md(`<pre>${functions[option.value.key](clipboardText)}</pre>`);
             } catch (e) {
@@ -781,14 +815,16 @@ loop: while (true) {
   switch (transformation.key) {
     case 'finish':
       break loop;
-    case 'last':
-      clipboardText = runAllTransformations(last);
-      operations = [...last];
+    case 'last': {
+      const result = runAllTransformations(clipboardText, last);
+      clipboardText = result.text;
+      operations = result.operation;
 
       //remove last transformations from local memory
       //it is still persisted and will be updated if new transformations are applied
       last = [];
       break;
+    }
     case 'save': {
       const transformationName = await arg('Enter a name for this transformations:');
 
@@ -822,8 +858,9 @@ loop: while (true) {
         }
       } else {
         const savedTransformation = persisted[savedTransformationName];
-        clipboardText = runAllTransformations(savedTransformation);
-        operations = [...savedTransformation];
+        const result = runAllTransformations(clipboardText, savedTransformation);
+        clipboardText = result.text;
+        operations = result.operation;
         last = [];
       }
       break;
@@ -849,7 +886,10 @@ loop: while (true) {
       break;
     }
     default: {
-      const result = await handleTransformation(clipboardText, transformation);
+      const result: TransformedOperation & { perform?: boolean } =
+        transformation.type === 'run'
+          ? runAllTransformations(clipboardText, transformation.operations)
+          : await handleTransformation(clipboardText, transformation);
 
       //finish if cmd+enter was pressed in the params prompt
       if (!performFlag && result.perform) performFlag = true;
@@ -869,7 +909,7 @@ loop: while (true) {
       clipboardText = result.text;
 
       //save operations
-      operations.push({ name: result.name, params: [result.paramValue] });
+      operations.push(...result.operation);
 
       //store usage for sorting
       usage[transformation.key] = (usage[transformation.key] || 0) + 1;
