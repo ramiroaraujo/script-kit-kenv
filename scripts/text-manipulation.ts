@@ -855,6 +855,7 @@ loop: while (true) {
           delete persisted[savedTransformationName];
           await cache.store('persisted', persisted);
           notify(`Transformation ${savedTransformationName} deleted`);
+          exit();
         }
       } else {
         const savedTransformation = persisted[savedTransformationName];
