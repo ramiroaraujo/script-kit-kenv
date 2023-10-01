@@ -822,9 +822,7 @@ loop: while (true) {
       const result = runAllTransformations(clipboardText, last);
       clipboardText = result.text;
       operations = result.operation;
-
-      //remove last transformations from local memory
-      //it is still persisted and will be updated if new transformations are applied
+      //remove last from local memory, still persisted and will be updated if new transformations are applied
       last = [];
       break;
     }
