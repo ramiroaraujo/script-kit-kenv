@@ -757,6 +757,9 @@ loop: while (true) {
       })
       .filter(Boolean)
       .sort((a, b) => {
+        if (a.value.type === 'run') return 1;
+        if (b.value.type === 'run') return -1;
+
         if (a.value.key === 'init') return -1;
         if (b.value.key === 'init') return 1;
 
