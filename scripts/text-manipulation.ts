@@ -722,7 +722,7 @@ loop: while (true) {
     {
       placeholder: 'Choose a text transformation',
       hint: operations.length
-        ? 'Ops: ' + operations.map((o) => functions['reverseCamelCase'](o.name)).join(' > ')
+        ? '> ' + operations.map((o) => functions['reverseCamelCase'](o.name)).join(' > ')
         : '',
       onEscape: () => {}, //dont close on escape
       flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
