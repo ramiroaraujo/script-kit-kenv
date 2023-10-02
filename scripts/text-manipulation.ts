@@ -125,6 +125,50 @@ const transformations: Transformation[] = [
   },
   {
     option: {
+      name: 'Convert Formatted Number to Plain Number',
+      description: 'Auto-detect formatted number (optional currencies) and convert to plain number',
+      value: { key: 'convertFormattedNumber' },
+    },
+    function: (text) => {
+      return text
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line !== '')
+        .map((line) => {
+          const sanitizedText = line.replace(/\s*(us\s?\$|ar\s?\$|\$)/gi, '').trim();
+          const hasComma = sanitizedText.includes(',');
+          const hasDot = sanitizedText.includes('.');
+
+          if (!hasComma && !hasDot) {
+            return parseFloat(sanitizedText);
+          }
+
+          if (hasComma && !hasDot) {
+            return parseFloat(sanitizedText.replace(',', '.'));
+          }
+
+          if (!hasComma && hasDot) {
+            return parseFloat(sanitizedText);
+          }
+
+          if (hasComma && hasDot) {
+            const commaIndex = sanitizedText.indexOf(',');
+            const dotIndex = sanitizedText.indexOf('.');
+
+            if (commaIndex < dotIndex) {
+              return parseFloat(sanitizedText.replace(',', '').replace('.', '.'));
+            } else {
+              return parseFloat(sanitizedText.replace('.', '').replace(',', '.'));
+            }
+          }
+
+          return line;
+        })
+        .join('\n');
+    },
+  },
+  {
+    option: {
       name: 'Count Characters',
       description: 'Count the number of characters',
       value: { key: 'countCharacters' },
