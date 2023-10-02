@@ -569,13 +569,15 @@ const transformations: Transformation[] = [
       description: 'Sum all numbers in each line',
       value: { key: 'sumAllNumbers' },
     },
-    function: (text) =>
-      text
+    function: (text) => {
+      const sum = text
         .trim()
         .split('\n')
         .filter((line) => line.trim() !== '')
         .map((line) => parseFloat(line.trim()))
-        .reduce((total, num) => total + num, 0),
+        .reduce((total, num) => total + num, 0);
+      return Math.round(sum * 10 ** 5) / 10 ** 5; // round to 5 decimal places
+    },
   },
   {
     option: {
