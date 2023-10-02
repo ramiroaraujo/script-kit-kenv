@@ -6,6 +6,8 @@ import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
 import { Choice, PromptConfig } from '../../../../.kit';
 
+const Mexp = await npm('math-expression-evaluator');
+
 // Cache setup
 const cache = await new CacheHelper('text-manipulation', 'never').init();
 let last: Operation[] = cache.get('last') ?? [];
@@ -310,6 +312,33 @@ const transformations: Transformation[] = [
       value: { key: 'lowerCase' },
     },
     function: (text) => text.toLowerCase(),
+  },
+  {
+    option: {
+      name: 'Math Expression',
+      description: 'Evaluate each line as a math expression',
+      value: {
+        key: 'mathExpression',
+        parameter: {
+          name: 'Expression',
+          description: 'Enter a math expression to evaluate, use {number} as a placeholder',
+          defaultValue: '{number} ',
+        },
+      },
+    },
+    function: (text, expression) =>
+      text
+        .split('\n')
+        .map((line) => {
+          try {
+            const m = new Mexp();
+            const r = m.eval(expression.replace('{number}', line.trim()));
+            return r;
+          } catch (e) {
+            return line;
+          }
+        })
+        .join('\n'),
   },
   {
     option: {
