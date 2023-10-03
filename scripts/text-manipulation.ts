@@ -127,6 +127,30 @@ const transformations: Transformation[] = [
   },
   {
     option: {
+      name: 'Count Characters',
+      description: 'Count the number of characters',
+      value: { key: 'countCharacters' },
+    },
+    function: (text) => text.length,
+  },
+  {
+    option: {
+      name: 'Count Lines',
+      description: 'Count the number of lines',
+      value: { key: 'countLines' },
+    },
+    function: (text) => text.split('\n').length,
+  },
+  {
+    option: {
+      name: 'Count Words',
+      description: 'Count the number of words',
+      value: { key: 'countWords' },
+    },
+    function: (text) => text.trim().split(/\s+/).length,
+  },
+  {
+    option: {
       name: 'Extract / Convert Formatted Number to Plain Number',
       description:
         'Extract and auto-detect formatted number (optional currencies) and convert to plain number',
@@ -169,30 +193,6 @@ const transformations: Transformation[] = [
         })
         .join('\n');
     },
-  },
-  {
-    option: {
-      name: 'Count Characters',
-      description: 'Count the number of characters',
-      value: { key: 'countCharacters' },
-    },
-    function: (text) => text.length,
-  },
-  {
-    option: {
-      name: 'Count Lines',
-      description: 'Count the number of lines',
-      value: { key: 'countLines' },
-    },
-    function: (text) => text.split('\n').length,
-  },
-  {
-    option: {
-      name: 'Count Words',
-      description: 'Count the number of words',
-      value: { key: 'countWords' },
-    },
-    function: (text) => text.trim().split(/\s+/).length,
   },
   {
     option: {
