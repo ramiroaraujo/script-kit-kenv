@@ -167,6 +167,7 @@ const transformations: Transformation[] = [
         })
         .flat()
         .filter((url, i, arr) => arr.indexOf(url) === arr.lastIndexOf(url))
+        .map((url) => url.toLowerCase())
         .join('\n'),
   },
   {
