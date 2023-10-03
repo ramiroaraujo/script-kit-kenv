@@ -151,6 +151,25 @@ const transformations: Transformation[] = [
   },
   {
     option: {
+      name: 'Extract URLs',
+      description: 'Extract and normalize URLs from text',
+      value: { key: 'extractUrls' },
+    },
+    function: (text) =>
+      text
+        .split('\n')
+        .map((line) => {
+          let url = line.match(/(https?:\/\/[^\s]+)/g);
+          if (url && url[0]) return url[0];
+          url = line.match(/(?:www\.)?([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+)/g);
+          if (url && url[0]) return `https://${url[0]}`;
+          return '';
+        })
+        .filter((url) => url !== '')
+        .join('\n'),
+  },
+  {
+    option: {
       name: 'Extract / Convert Formatted Number to Plain Number',
       description:
         'Extract and auto-detect formatted number (optional currencies) and convert to plain number',
