@@ -767,6 +767,9 @@ const handleTransformation = async (text: string, transformation: TransformValue
           input: config.defaultValue,
           hint: config.description,
           flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
+          onEscape: async () => {
+            await handleEscape(false);
+          },
         },
         (input) => {
           try {
@@ -799,10 +802,14 @@ const handleTransformation = async (text: string, transformation: TransformValue
 const scripts = (await getScripts()).filter((s) => s.kenv === 'script-kit-kenv');
 const jqScript = scripts.find((s) => s.command === 'extract-with-jq');
 const textManipulationScript = scripts.find((s) => s.command === 'text-manipulation');
-const stepBack = async () => {
-  const previousOps = operations.slice(0, -1).map((op) => JSON.stringify(op));
-  if (previousOps.length > 0) {
-    await run(textManipulationScript.filePath, ...previousOps);
+const handleEscape = async (stepBack: boolean) => {
+  //remove or not the last operation from the list, depending on stepBack
+  const passOperations = operations
+    .slice(0, stepBack ? -1 : operations.length)
+    .map((op) => JSON.stringify(op));
+  //re-execute the script with the remaining operations
+  if (passOperations.length > 0) {
+    await run(textManipulationScript.filePath, ...passOperations);
   }
   exit();
 };
@@ -846,7 +853,7 @@ loop: while (true) {
         ? '> ' + operations.map((o) => functions['reverseCamelCase'](o.name)).join(' > ')
         : '',
       onEscape: async () => {
-        await stepBack();
+        await handleEscape(true);
       }, //dont close on escape
       flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
     },
