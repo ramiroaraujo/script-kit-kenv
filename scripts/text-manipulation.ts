@@ -156,19 +156,21 @@ const transformations: Transformation[] = [
       value: { key: 'extractUrls' },
     },
     function: (text) =>
-      text
-        .split('\n')
-        .map((line) => {
-          const urls = line.match(/https?:\/\/[^\s,\])}]+/g) || [];
-          const incompleteUrls = (
-            line.match(/(?:www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+[^\s,\])}]*/g) || []
-          ).map((url) => `https://${url}`);
-          return Array.from(new Set([...urls, ...incompleteUrls]));
-        })
-        .flat()
-        .filter((url, i, arr) => arr.indexOf(url) === arr.lastIndexOf(url))
-        .map((url) => url.toLowerCase())
-        .join('\n'),
+      Array.from(
+        new Set(
+          text
+            .split('\n')
+            .map((line) => {
+              const urls = line.match(/https?:\/\/[^\s,\])}]+/g) || [];
+              const incompleteUrls = (
+                line.match(/(?:www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+[^\s,\])}]*/g) || []
+              ).map((url) => `https://${url}`);
+              return [...urls, ...incompleteUrls];
+            })
+            .flat()
+            .map((url) => url.toLowerCase()),
+        ),
+      ).join('\n'),
   },
   {
     option: {
