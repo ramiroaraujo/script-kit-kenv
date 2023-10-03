@@ -769,15 +769,21 @@ const handleTransformation = async (text: string, transformation: TransformValue
   } as TransformedOperation & { perform: boolean };
 };
 
-let clipboardText = await clipboard.readText();
-
-// store performed operations
-let operations: { name: string; params: unknown[] }[] = [];
-
 // jq script ref
 const jqScript = (await getScripts()).find(
   (s) => s.kenv === 'script-kit-kenv' && s.command === 'extract-with-jq',
 );
+const textManipulationScript = (await getScripts()).find(
+  (s) => s.kenv === 'script-kit-kenv' && s.command === 'text-manipulation',
+);
+const stepBack = async () => {
+  const previousOps = operations.slice(0, -1).map((op) => JSON.stringify(op));
+  if (previousOps.length > 0) {
+    await run(textManipulationScript.filePath, ...previousOps);
+  }
+  exit();
+  // process.exit(0);
+};
 
 const runAllTransformations = (input: string, operations: Operation[]) => {
   return operations.reduce(
@@ -790,16 +796,36 @@ const runAllTransformations = (input: string, operations: Operation[]) => {
   );
 };
 
+let clipboardText = await clipboard.readText();
+
+// store performed operations
+let operations: Operation[] = [];
+
+if (args.length) {
+  operations = args.map((arg) => {
+    return JSON.parse(arg) as Operation;
+  });
+
+  clipboardText = runAllTransformations(clipboardText, operations).text;
+
+  args = [];
+}
+
 // eslint-disable-next-line no-constant-condition
 loop: while (true) {
   let performFlag: boolean = false;
   const transformation = await arg<TransformValue>(
     {
+      preview: () => {
+        return md(`<pre>${clipboardText}</pre>`);
+      },
       placeholder: 'Choose a text transformation',
       hint: operations.length
         ? '> ' + operations.map((o) => functions['reverseCamelCase'](o.name)).join(' > ')
         : '',
-      onEscape: () => {}, //dont close on escape
+      onEscape: async () => {
+        await stepBack();
+      }, //dont close on escape
       flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
     },
     [...operationOptions, ...options, ...savedTransformations]
@@ -1001,7 +1027,6 @@ loop: while (true) {
 
 //store last transformations
 await cache.store('last', operations);
-
 await clipboard.writeText(clipboardText);
 
 notify({ title: 'Text transformation applied!', message: 'Text copied to clipboard' });
