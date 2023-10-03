@@ -127,8 +127,9 @@ const transformations: Transformation[] = [
   },
   {
     option: {
-      name: 'Convert Formatted Number to Plain Number',
-      description: 'Auto-detect formatted number (optional currencies) and convert to plain number',
+      name: 'Extract / Convert Formatted Number to Plain Number',
+      description:
+        'Extract and auto-detect formatted number (optional currencies) and convert to plain number',
       value: { key: 'convertFormattedNumber' },
     },
     function: (text) => {
