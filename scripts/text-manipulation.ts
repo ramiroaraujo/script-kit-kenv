@@ -660,7 +660,8 @@ const transformations: Transformation[] = [
         key: 'wrapEachLine',
         parameter: {
           name: 'Wrapper',
-          description: 'Enter a wrapper for each line',
+          description:
+            'Enter a wrapper for each line, e.g. " or \'. Use 2 chars to wrap with the first and last character, e.g. []',
           defaultValue: '"',
         },
       },
