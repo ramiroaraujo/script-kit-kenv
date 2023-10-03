@@ -672,10 +672,11 @@ const transformations: Transformation[] = [
         .map((line) => {
           const lastChar = line.charAt(line.length - 1);
           const hasEOL = eolChars.includes(lastChar);
+          const [left, right] = wrapper.length === 1 ? [wrapper, wrapper] : wrapper.split('');
           if (hasEOL) {
-            return `${wrapper}${line.slice(0, -1)}${wrapper}${lastChar}`;
+            return `${left}${line.slice(0, -1)}${right}${lastChar}`;
           } else {
-            return `${wrapper}${line}${wrapper}`;
+            return `${left}${line}${right}`;
           }
         })
         .join('\n');
