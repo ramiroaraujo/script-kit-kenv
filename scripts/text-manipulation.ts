@@ -779,7 +779,6 @@ const stepBack = async () => {
     await run(textManipulationScript.filePath, ...previousOps);
   }
   exit();
-  // process.exit(0);
 };
 
 const runAllTransformations = (input: string, operations: Operation[]) => {
