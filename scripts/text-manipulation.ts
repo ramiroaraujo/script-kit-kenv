@@ -770,12 +770,9 @@ const handleTransformation = async (text: string, transformation: TransformValue
 };
 
 // jq script ref
-const jqScript = (await getScripts()).find(
-  (s) => s.kenv === 'script-kit-kenv' && s.command === 'extract-with-jq',
-);
-const textManipulationScript = (await getScripts()).find(
-  (s) => s.kenv === 'script-kit-kenv' && s.command === 'text-manipulation',
-);
+const scripts = (await getScripts()).filter((s) => s.kenv === 'script-kit-kenv');
+const jqScript = scripts.find((s) => s.command === 'extract-with-jq');
+const textManipulationScript = scripts.find((s) => s.command === 'text-manipulation');
 const stepBack = async () => {
   const previousOps = operations.slice(0, -1).map((op) => JSON.stringify(op));
   if (previousOps.length > 0) {
