@@ -161,9 +161,9 @@ const transformations: Transformation[] = [
           text
             .split('\n')
             .map((line) => {
-              const urls = line.match(/https?:\/\/[^\s,\])}]+/g) || [];
+              const urls = line.match(/https?:\/\/[^\s,\])}'"]+/g) || [];
               const incompleteUrls = (
-                line.match(/(?:www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+[^\s,\])}]*/g) || []
+                line.match(/(?:www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+[^\s,\])}'"]*/g) || []
               ).map((url) => `https://${url}`);
               return [...urls, ...incompleteUrls];
             })
