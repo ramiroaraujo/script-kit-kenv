@@ -159,13 +159,14 @@ const transformations: Transformation[] = [
       text
         .split('\n')
         .map((line) => {
-          let url = line.match(/(https?:\/\/[^\s]+)/g);
-          if (url && url[0]) return url[0];
-          url = line.match(/(?:www\.)?([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+)/g);
-          if (url && url[0]) return `https://${url[0]}`;
-          return '';
+          const urls = line.match(/https?:\/\/[^\s,\])}]+/g) || [];
+          const incompleteUrls = (
+            line.match(/(?:www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+[^\s,\])}]*/g) || []
+          ).map((url) => `https://${url}`);
+          return Array.from(new Set([...urls, ...incompleteUrls]));
         })
-        .filter((url) => url !== '')
+        .flat()
+        .filter((url, i, arr) => arr.indexOf(url) === arr.lastIndexOf(url))
         .join('\n'),
   },
   {
