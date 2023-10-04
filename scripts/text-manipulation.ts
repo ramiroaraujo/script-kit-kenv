@@ -86,7 +86,7 @@ const transformations: Transformation[] = [
   },
   {
     option: {
-      name: 'Capitalize',
+      name: 'Capitalize / TitleCase',
       description: 'Convert text to Capital Case',
       value: { key: 'capitalize' },
     },
@@ -96,7 +96,32 @@ const transformations: Transformation[] = [
         .map((line) =>
           line
             .split(' ')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .map((word, idx, arr) => {
+              if (
+                idx === 0 ||
+                idx === arr.length - 1 ||
+                ![
+                  'and',
+                  'or',
+                  'the',
+                  'of',
+                  'in',
+                  'to',
+                  'for',
+                  'with',
+                  'on',
+                  'at',
+                  'from',
+                  'by',
+                  'about',
+                  'as',
+                ].includes(word.toLowerCase())
+              ) {
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+              } else {
+                return word.toLowerCase();
+              }
+            })
             .join(' '),
         )
         .join('\n'),
