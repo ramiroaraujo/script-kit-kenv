@@ -856,7 +856,7 @@ loop: while (true) {
         : '',
       onEscape: async () => {
         await handleEscape(true);
-      }, //dont close on escape
+      },
       flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
     },
     [...operationOptions, ...options, ...savedTransformations]
