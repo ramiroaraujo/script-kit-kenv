@@ -834,6 +834,7 @@ let clipboardText = await clipboard.readText();
 // store performed operations
 let operations: Operation[] = [];
 
+// if there are args, parse them as operations, init clipboardText by running them all, and clear args
 if (args.length) {
   operations = args.map((arg) => {
     return JSON.parse(arg) as Operation;
