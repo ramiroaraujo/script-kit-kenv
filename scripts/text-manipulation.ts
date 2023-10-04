@@ -46,10 +46,11 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, suffix) => {
-      const lines = text.split('\n');
-      return lines.map((line) => line + suffix).join('\n');
-    },
+    function: (text, suffix) =>
+      text
+        .split('\n')
+        .map((line) => line + suffix)
+        .join('\n'),
   },
   {
     option: {
@@ -115,9 +116,9 @@ const transformations: Transformation[] = [
     },
     function: (text, regex) => {
       if (regex.length === 0) return text;
-      const lines = text.split('\n');
       const pattern = new RegExp(regex);
-      return lines
+      return text
+        .split('\n')
         .map((line) => {
           const match = line.match(pattern);
           return match ? match[0] : '';
@@ -156,21 +157,19 @@ const transformations: Transformation[] = [
       value: { key: 'extractUrls' },
     },
     function: (text) =>
-      Array.from(
-        new Set(
-          text
-            .split('\n')
-            .map((line) => {
-              const urls = line.match(/https?:\/\/[^\s,\])}'"]+/g) || [];
-              const incompleteUrls = (
-                line.match(/(?:www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+[^\s,\])}'"]*/g) || []
-              ).map((url) => `https://${url}`);
-              return [...urls, ...incompleteUrls];
-            })
-            .flat()
-            .map((url) => url.toLowerCase()),
-        ),
-      ).join('\n'),
+      text
+        .split('\n')
+        .map((line) => {
+          const urls = line.match(/https?:\/\/[^\s,\])}'"]+/g) || [];
+          const incompleteUrls = (
+            line.match(/(?:www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+[^\s,\])}'"]*/g) || []
+          ).map((url) => `https://${url}`);
+          return [...urls, ...incompleteUrls];
+        })
+        .flat()
+        .map((url) => url.toLowerCase())
+        .filter((url, index, array) => array.indexOf(url) === index)
+        .join('\n'),
   },
   {
     option: {
@@ -188,30 +187,24 @@ const transformations: Transformation[] = [
           const sanitizedText = line.replace(/\s*(us\s?\$|ar\s?\$|\$)/gi, '').trim();
           const hasComma = sanitizedText.includes(',');
           const hasDot = sanitizedText.includes('.');
-
           if (!hasComma && !hasDot) {
             return parseFloat(sanitizedText);
           }
-
           if (hasComma && !hasDot) {
             return parseFloat(sanitizedText.replace(',', '.'));
           }
-
           if (!hasComma && hasDot) {
             return parseFloat(sanitizedText);
           }
-
           if (hasComma && hasDot) {
             const commaIndex = sanitizedText.indexOf(',');
             const dotIndex = sanitizedText.indexOf('.');
-
             if (commaIndex < dotIndex) {
               return parseFloat(sanitizedText.replace(',', '').replace('.', '.'));
             } else {
               return parseFloat(sanitizedText.replace('.', '').replace(',', '.'));
             }
           }
-
           return line;
         })
         .join('\n');
@@ -223,10 +216,11 @@ const transformations: Transformation[] = [
       description: 'Prepend numbers to each line',
       value: { key: 'generateNumberedList' },
     },
-    function: (text) => {
-      const lines = text.split('\n');
-      return lines.map((line, index) => `${index + 1}. ${line}`).join('\n');
-    },
+    function: (text) =>
+      text
+        .split('\n')
+        .map((line, index) => `${index + 1}. ${line}`)
+        .join('\n'),
   },
   {
     option: {
@@ -290,9 +284,11 @@ const transformations: Transformation[] = [
     },
     function: (text, regex) => {
       if (regex.length === 0) return text;
-      const lines = text.split('\n');
       const pattern = new RegExp(regex, 'i');
-      return lines.filter((line) => pattern.test(line)).join('\n');
+      return text
+        .split('\n')
+        .filter((line) => pattern.test(line))
+        .join('\n');
     },
   },
   {
@@ -355,9 +351,8 @@ const transformations: Transformation[] = [
         .split('\n')
         .map((line) => {
           try {
-            const m = new Mexp();
-            const r = m.eval(expression.replace('{number}', line.trim()));
-            return r;
+            const mexp = new Mexp();
+            return mexp.eval(expression.replace('{number}', line.trim()));
           } catch (e) {
             return line;
           }
@@ -377,10 +372,11 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, prefix) => {
-      const lines = text.split('\n');
-      return lines.map((line) => prefix + line).join('\n');
-    },
+    function: (text, prefix) =>
+      text
+        .split('\n')
+        .map((line) => prefix + line)
+        .join('\n'),
   },
   {
     option: {
@@ -432,9 +428,11 @@ const transformations: Transformation[] = [
     },
     function: (text, regex) => {
       if (regex.length === 0) return text;
-      const lines = text.split('\n');
       const pattern = new RegExp(regex, 'i');
-      return lines.filter((line) => !pattern.test(line)).join('\n');
+      return text
+        .split('\n')
+        .filter((line) => !pattern.test(line))
+        .join('\n');
     },
   },
   {
@@ -452,8 +450,10 @@ const transformations: Transformation[] = [
     },
     function: (text, regex) => {
       const pattern = new RegExp(regex);
-      const lines = text.split('\n');
-      return lines.map((line) => line.replace(pattern, '')).join('\n');
+      return text
+        .split('\n')
+        .map((line) => line.replace(pattern, ''))
+        .join('\n');
     },
   },
   {
@@ -511,13 +511,15 @@ const transformations: Transformation[] = [
     function: (text, regexWithReplacement) => {
       const [regex, replacement] = regexWithReplacement.split('|');
       const pattern = new RegExp(regex, 'g');
-      const lines = text.split('\n');
-      return lines.map((line) => line.replace(pattern, replacement)).join('\n');
+      return text
+        .split('\n')
+        .map((line) => line.replace(pattern, replacement))
+        .join('\n');
     },
   },
   {
     option: {
-      name: 'Reverse camelCase',
+      name: 'Reverse (Undo) camelCase',
       description: 'Convert camelCase to Human readable',
       value: { key: 'reverseCamelCase' },
     },
@@ -667,10 +669,10 @@ const transformations: Transformation[] = [
       },
     },
     function: (text, wrapper) => {
-      const lines = text.split('\n');
       const eolChars = [',', '.', ';'];
       const [left, right] = wrapper.length === 1 ? [wrapper, wrapper] : wrapper.split('');
-      return lines
+      return text
+        .split('\n')
         .map((line) => {
           const lastChar = line.charAt(line.length - 1);
           const hasEOL = eolChars.includes(lastChar);
