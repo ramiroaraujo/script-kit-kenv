@@ -8,7 +8,7 @@ import { Choice, PromptConfig } from '../../../../.kit';
 
 const Mexp = await npm('math-expression-evaluator');
 
-// Cache setup
+// cache setup
 const cache = await new CacheHelper('text-manipulation', 'never').init();
 let last: Operation[] = cache.get('last') ?? [];
 const persisted = cache.get('persisted') ?? {};
@@ -800,16 +800,18 @@ const handleTransformation = async (text: string, transformation: TransformValue
   } as TransformedOperation & { perform: boolean };
 };
 
-// jq script ref
+// scripts refefences
 const scripts = (await getScripts()).filter((s) => s.kenv === 'script-kit-kenv');
 const jqScript = scripts.find((s) => s.command === 'extract-with-jq');
 const textManipulationScript = scripts.find((s) => s.command === 'text-manipulation');
+
+// escape handler, for history undo
 const handleEscape = async (stepBack: boolean) => {
-  //remove or not the last operation from the list, depending on stepBack
+  // remove or not the last operation from the list, depending on stepBack
   const passOperations = operations
     .slice(0, stepBack ? -1 : operations.length)
     .map((op) => JSON.stringify(op));
-  //re-execute the script with the remaining operations
+  // re-execute the script with the remaining operations
   if (passOperations.length > 0) {
     await run(textManipulationScript.filePath, ...passOperations);
   }
@@ -863,20 +865,21 @@ loop: while (true) {
       .map((option) => {
         // hide init if there are already operations
         if (option.value.key === 'init' && operations.length) return null;
-        //last transformation if not available
+        // hide last transformation if there is none, or already performed operations
         if (option.value.key === 'last' && (!last.length || operations.length)) return null;
-        //hide finish if no operations yet
+        // hide finish if no operations yet
         if (option.value.key === 'finish' && !operations.length) return null;
-        //hide save if no operations yet
+        // hide save if no operations yet
         if (option.value.key === 'save' && !operations.length) return null;
-        //hide listSaved if no saved transformations yet
+        // hide listSaved if no saved transformations yet
         if (option.value.key === 'listSaved' && Object.keys(persisted).length === 0) return null;
 
-        //show last transformation names in description
+        // show last transformation names in description as a trail of transformations
         if (option.value.key === 'last') {
           option.description = last.map((o) => o.name).join(' > ');
         }
 
+        // hide jq option if text is not a valid json
         if (option.value.key === 'jq') {
           try {
             JSON.parse(clipboardText);
@@ -889,6 +892,7 @@ loop: while (true) {
       })
       .filter(Boolean)
       .sort((a, b) => {
+        // hardcoded main operations on top, if they weren't filtered earlier
         if (a.value.type === 'run') return 1;
         if (b.value.type === 'run') return -1;
 
@@ -913,6 +917,7 @@ loop: while (true) {
         if (a.value.key === 'jq') return -1;
         if (b.value.key === 'jq') return 1;
 
+        // time decay sorting for the rest
         const now = Date.now();
         const timeDecay = 3600 * 24 * 7 * 1000; // Time decay in milliseconds (e.g., 1 week)
 
@@ -951,21 +956,22 @@ loop: while (true) {
     case 'finish':
       break loop;
     case 'last': {
+      // perform last transformations, overwrite clipboardText and operations, and remove last from local memory
       const result = runAllTransformations(clipboardText, last);
       clipboardText = result.text;
       operations = result.operation;
-      //remove last from local memory, still persisted and will be updated if new transformations are applied
       last = [];
       break;
     }
     case 'save': {
+      // ask for a name, store operations, and exit
       const transformationName = await arg('Enter a name for this transformations:');
-
       persisted[functions['camelCase'](transformationName)] = operations;
       await cache.store('persisted', persisted);
       break loop;
     }
     case 'listSaved': {
+      // list saved transformations, filter to selected and run; cmd+enter to delete
       const flags = { delete: { name: 'Delete', shortcut: 'cmd+enter' } };
       const savedTransformationName = await arg(
         {
@@ -1000,6 +1006,7 @@ loop: while (true) {
       break;
     }
     case 'jq':
+      // persist current text in clipboard, run jq script, and exit
       await clipboard.writeText(clipboardText);
       await run(jqScript.filePath);
       exit();
@@ -1025,16 +1032,16 @@ loop: while (true) {
           ? runAllTransformations(clipboardText, transformation.operations)
           : await handleTransformation(clipboardText, transformation);
 
-      //finish if cmd+enter was pressed in the params prompt
+      // mark to finish if cmd+enter was pressed in the params prompt
       if (!performFlag && result.perform) performFlag = true;
 
-      //don't transform if result is empty
+      // don't transform if result is empty
       if (/^\s*$/.test(result.text)) {
         notify({ title: 'Transformed text is empty', message: 'No changes applied' });
         break;
       }
 
-      //don't store operation if result is the same as previous
+      // don't store operation if result is the same as previous
       if (result.text === clipboardText) {
         notify({ title: 'Transformed text is the same', message: 'No changes applied' });
         break;
@@ -1042,21 +1049,21 @@ loop: while (true) {
 
       clipboardText = result.text;
 
-      //save operations
+      // save operations
       operations.push(...result.operation);
 
-      //store usage for sorting
+      // store usage for sorting
       usage[transformation.key] = (usage[transformation.key] || 0) + 1;
       timestamps[transformation.key] = Date.now();
       await cache.store('usage', usage);
       await cache.store('timestamps', timestamps);
     }
   }
-  //finish if cmd+enter was pressed
+  // finish if cmd+enter was pressed
   if (performFlag) break;
 }
 
-//store last transformations
+// store last transformations
 await cache.store('last', operations);
 await clipboard.writeText(clipboardText);
 
