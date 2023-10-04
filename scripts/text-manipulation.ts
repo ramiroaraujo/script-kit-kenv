@@ -812,7 +812,7 @@ const handleEscape = async (stepBack: boolean) => {
     .slice(0, stepBack ? -1 : operations.length)
     .map((op) => JSON.stringify(op));
   // re-execute the script with the remaining operations
-  if (passOperations.length > 0) {
+  if (operations.length > 0) {
     await run(textManipulationScript.filePath, ...passOperations);
   }
   exit();
