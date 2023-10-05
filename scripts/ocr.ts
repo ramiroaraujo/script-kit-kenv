@@ -1,5 +1,6 @@
 // Name: OCR
 // Description: Capture a screenshot and recognize the text using tesseract.js
+// Shortcut: cmd+shift+option+o
 
 import '@johnlindquist/kit';
 
