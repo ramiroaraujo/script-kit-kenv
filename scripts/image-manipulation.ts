@@ -28,3 +28,4 @@ notify({ title: 'Image Manipulation', message: 'Coming soon...' });
 //   but that would mean using cli tools for the manipulation, and not JS
 //   probably faster, but less portable
 //   on the bright side, we can run each transformation on a different thread
+// Check `kit` source code for form handling, will be useful for resize and crop operations
