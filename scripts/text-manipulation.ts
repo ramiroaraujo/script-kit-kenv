@@ -249,7 +249,7 @@ const transformations: Transformation[] = [
       },
     },
     function: (text, filter) => {
-      if (filter.length === 0) return text;
+      if (filter.length < 3) return text;
       const index = text.toLowerCase().indexOf(filter.toLowerCase());
       if (index === -1) return text;
       const matchedLine = text.slice(index, text.length).split('\n')[0];
