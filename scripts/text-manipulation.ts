@@ -305,8 +305,8 @@ const transformations: Transformation[] = [
   },
   {
     option: {
-      name: 'kebab-case',
-      description: 'Convert text to kebab-case',
+      name: 'kebab-case / hyphen-case',
+      description: 'Convert text to kebab-case / hyphen-case',
       value: { key: 'kebabCase' },
     },
     function: (text) =>
