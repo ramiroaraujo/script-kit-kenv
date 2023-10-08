@@ -237,7 +237,7 @@ const transformations: Transformation[] = [
   },
   {
     option: {
-      name: 'Filter value by key',
+      name: 'Filter Value by Key',
       description: 'Given a text of key-value pairs, filter by key',
       value: {
         key: 'filterValueByKey',
