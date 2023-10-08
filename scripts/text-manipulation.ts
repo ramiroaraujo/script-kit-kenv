@@ -256,8 +256,7 @@ const transformations: Transformation[] = [
       const value = matchedLine
         .match(/(?::|=>|->)(.+)/)[1]
         ?.trim()
-        .replace(/^['"](.+?)['"]$/g, '$1');
-
+        .replace(/^(['"`])(.+?)\1.*[,;]*/g, '$2');
       return value ?? text;
     },
   },
