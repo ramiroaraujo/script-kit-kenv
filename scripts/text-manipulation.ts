@@ -35,6 +35,23 @@ type Transformation = {
 const transformations: Transformation[] = [
   {
     option: {
+      name: 'Convert numbers to integers',
+      description: 'convert numbers in all lines to integers',
+      value: {
+        key: 'convertToIntegers',
+      },
+    },
+    function: (text) =>
+      text
+        .split('\n')
+        .map((line) => {
+          const num = parseInt(line);
+          return isNaN(num) ? line : num;
+        })
+        .join('\n'),
+  },
+  {
+    option: {
       name: 'Append Text to All Lines',
       description: 'Add text to the end of all lines',
       value: {
