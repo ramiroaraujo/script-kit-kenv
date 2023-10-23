@@ -35,6 +35,24 @@ type Transformation = {
 const transformations: Transformation[] = [
   {
     option: {
+      name: 'Extract all numbers',
+      description: 'Extract all numbers from all lines',
+      value: {
+        key: 'extractAllNumbers',
+      },
+    },
+    function: (text) =>
+      text
+        .split('\n')
+        .map((line) => {
+          const numbers: string[] = line.match(/-?\d+(\.\d+)?/g) || [];
+          return numbers.map((n) => parseFloat(n));
+        })
+        .flat()
+        .join('\n'),
+  },
+  {
+    option: {
       name: 'Append Text to All Lines',
       description: 'Add text to the end of all lines',
       value: {
