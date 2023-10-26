@@ -916,6 +916,11 @@ const runAllTransformations = (input: string, operations: Operation[]) => {
 
 let clipboardText = await clipboard.readText();
 
+if (clipboardText.trim() === '') {
+  notify('Clipboard is empty or not a valid text');
+  exit();
+}
+
 // store performed operations
 let operations: Operation[] = [];
 
