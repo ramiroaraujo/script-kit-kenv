@@ -309,6 +309,21 @@ const transformations: Transformation[] = [
   },
   {
     option: {
+      name: 'Javascript Object to JSON',
+      description: 'Convert regular valid object to JSON',
+      value: { key: 'convertObjectToJSON' },
+    },
+    function: (text) => {
+      try {
+        const evaluated = eval(`(${text})`);
+        return JSON.stringify(evaluated, null, 2);
+      } catch (e) {
+        return text;
+      }
+    },
+  },
+  {
+    option: {
       name: 'Join By',
       description: 'Join lines by a custom separator',
       value: {
