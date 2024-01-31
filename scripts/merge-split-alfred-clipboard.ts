@@ -3,6 +3,7 @@
 
 import '@johnlindquist/kit';
 import { ClipboardService } from '../lib/clipboard-service';
+import { Action } from '../../../../.kit';
 
 const db = new ClipboardService();
 
@@ -39,42 +40,56 @@ const writeSplitClipboard = async (splitText: string[]) => {
   await clipboard.writeText(splitText[splitText.length - 1]);
 };
 
-const action = await arg('Choose action', ['Merge', 'Split']);
+const actions: Action[] = [
+  {
+    shortcut: `${cmd}+enter`,
+    name: 'LF as separator',
+    visible: true, // Display shortcut in the prompt
+    flag: 'lf',
+  },
+];
+
+const action = await arg('Choose action', ['Merge', 'Split'], actions);
 
 if (action === 'Merge') {
   const count = await arg(
     {
-      placeholder: 'Enter the number of clipboard items to merge',
+      placeholder: 'clipboard items to merge',
+      actions,
     },
     async (input) => {
       if (isNaN(Number(input)) || input.length === 0) return '';
       return md(`<pre>${await getMergedClipboards(input, '\n')}</pre>`);
     },
   );
-  const separator = await arg(
-    {
-      placeholder: 'Enter the separator for merging',
-    },
-    async (input) => {
-      return md(`<pre>${await getMergedClipboards(count, input)}</pre>`);
-    },
-  );
+  const separator = flag.lf
+    ? '\n'
+    : await arg(
+        {
+          placeholder: 'Enter the separator for merging',
+        },
+        async (input) => {
+          return md(`<pre>${await getMergedClipboards(count, input)}</pre>`);
+        },
+      );
   const mergedText = await getMergedClipboards(count, separator);
   await writeMergedClipboards(mergedText);
   notify('Merged clipboard items and copied to clipboard');
 } else if (action === 'Split') {
-  let separator = await arg(
-    {
-      placeholder: 'Enter the separator for splitting',
-    },
-    async (input) => {
-      if (input === '\\n') input = '\n';
-      const strings = await getSplitClipboard(input, true);
-      return md(`<pre>${strings.join('\n')}</pre>`);
-    },
-  );
+  let separator = flag.lf
+    ? '\n'
+    : await arg(
+        {
+          placeholder: 'Enter the separator for splitting',
+        },
+        async (input) => {
+          if (input === '\\n') input = '\n';
+          const strings = await getSplitClipboard(input, true);
+          return md(`<pre>${strings.join('\n')}</pre>`);
+        },
+      );
   separator = separator === '\\n' ? '\n' : separator;
-  const trim = await arg('Trim clipboard content?', ['Yes', 'No']);
+  const trim = flag.lf ? 'Yes' : await arg('Trim clipboard content?', ['Yes', 'No']);
   const splitText = await getSplitClipboard(separator, trim === 'Yes');
   await writeSplitClipboard(splitText);
   notify('Split clipboard content and stored in Alfred clipboard');
