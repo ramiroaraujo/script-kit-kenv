@@ -54,31 +54,6 @@ const transformations: Transformation[] = [
   },
   {
     option: {
-      name: 'Convert to TSV',
-      description: 'Convert the text to Tab separated values',
-      value: {
-        key: 'convertToTSV',
-        parameter: {
-          name: 'Columns',
-          description: 'Enter the number of columns to split by',
-          defaultValue: '2',
-        },
-      },
-    },
-    function: (text, columns) =>
-      text
-        .split('\n')
-        .reduce((acc, line, index) => {
-          const col = Math.floor(index / parseInt(columns));
-          if (!acc[col]) acc[col] = [];
-          acc[col].push(line);
-          return acc;
-        }, [])
-        .map((row) => row.join('\t'))
-        .join('\n'),
-  },
-  {
-    option: {
       name: 'Base64 Decode',
       description: 'Decode text using Base64',
       value: { key: 'base64Decode' },
@@ -192,6 +167,40 @@ const transformations: Transformation[] = [
           return isNaN(num) ? line : num;
         })
         .join('\n'),
+  },
+  {
+    option: {
+      name: 'Convert to CSV / TSV',
+      description: 'Convert the text to Comma or Tab separated values',
+      value: {
+        key: 'convertToTSV',
+        parameter: [
+          {
+            name: 'Columns',
+            description: 'Enter the number of columns to split by',
+            defaultValue: '2',
+          },
+          {
+            name: 'Separator',
+            description: 'Enter the separator to use, default is comma',
+            defaultValue: ',',
+          },
+        ],
+      },
+    },
+    function: (text, columns, separator = ',') => {
+      if (separator === '\\t') separator = '\t';
+      return text
+        .split('\n')
+        .reduce((acc, line, index) => {
+          const col = Math.floor(index / parseInt(columns));
+          if (!acc[col]) acc[col] = [];
+          acc[col].push(line);
+          return acc;
+        }, [])
+        .map((row) => row.join(separator))
+        .join('\n');
+    },
   },
   {
     option: {
