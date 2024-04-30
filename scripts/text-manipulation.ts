@@ -443,19 +443,26 @@ const transformations: Transformation[] = [
       description: 'Limit the number of lines, similar to SQL limits',
       value: {
         key: 'limitLines',
-        parameter: {
-          name: 'Regex and Replacement',
-          description: 'Enter a limit number of lines, comma to specify offset',
-          defaultValue: '10',
-        },
+        parameter: [
+          {
+            name: 'Limit',
+            description: 'Enter a limit number of lines',
+            defaultValue: '5',
+          },
+          {
+            name: 'Offset',
+            description: 'Enter an optional offset',
+            defaultValue: '0',
+          },
+        ],
       },
     },
-    function: (text, limit) => {
-      const [limitNumber, optionalOffset] = limit.split(',').map((n) => parseInt(n));
-      const offset = optionalOffset ?? 0;
+    function: (text, limit, offset = '0') => {
+      const offsetNumber = parseInt(offset);
+      const limitNumber = parseInt(limit);
       return text
         .split('\n')
-        .slice(offset, offset + limitNumber)
+        .slice(offsetNumber, offsetNumber + limitNumber)
         .join('\n');
     },
   },
@@ -635,15 +642,22 @@ const transformations: Transformation[] = [
       description: 'Replace regex matches in all lines with specified text',
       value: {
         key: 'replaceRegexInAllLines',
-        parameter: {
-          name: 'Regex and Replacement',
-          description: "Enter regex and replacement text separated by a '|'",
-          defaultValue: '(.+)|$1',
-        },
+        parameter: [
+          {
+            name: 'Regex',
+            description: 'Enter the regex to replace',
+            defaultValue: '(.+)',
+          },
+          {
+            name: 'Replacement',
+            description: 'Enter the replacement text, use $1, $2, etc. for captured groups',
+            defaultValue: '$1',
+          },
+        ],
       },
     },
-    function: (text, regexWithReplacement) => {
-      const [regex, replacement] = regexWithReplacement.split('|');
+    function: (text, regex, replacement = '***') => {
+      if (regex.length === 0) return text;
       const pattern = new RegExp(regex, 'g');
       return text
         .split('\n')
