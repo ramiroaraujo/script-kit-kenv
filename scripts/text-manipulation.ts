@@ -888,37 +888,58 @@ const operationOptions: TransformChoice[] = [
 
 const handleTransformation = async (text: string, transformation: TransformValue) => {
   const { key, parameter: config } = transformation;
-  const paramValue = config
-    ? await arg(
-        {
-          input: config.defaultValue,
-          hint: config.description,
-          flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
-          onEscape: async () => {
-            await handleEscape(false);
-          },
+
+  const processConfig = async (configItem: PromptConfig, acc: string[] = []) => {
+    return await arg(
+      {
+        input: configItem.defaultValue,
+        hint: configItem.description,
+        flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
+        onEscape: async () => {
+          await handleEscape(false);
         },
-        (input) => {
-          try {
-            return md(`<pre>${functions[key](text, input)}</pre>`);
-          } catch (e) {
-            return md(`<pre>${text}</pre>`);
-          }
-        },
-      )
-    : null;
-  let transform: string;
-  try {
-    transform = functions[key](text, paramValue).toString();
-  } catch (e) {
-    transform = text;
+      },
+      (input) => {
+        try {
+          return md(`<pre>${functions[key](text, ...[...acc, input])}</pre>`);
+        } catch (e) {
+          return md(`<pre>${text}</pre>`);
+        }
+      },
+    );
+  };
+
+  const processAllConfigs = async (configs: PromptConfig[]) => {
+    const results = [];
+    for (const configItem of configs) {
+      const result = await processConfig(configItem, results);
+      results.push(result);
+    }
+    return results;
+  };
+
+  let paramValues;
+  if (Array.isArray(config)) {
+    paramValues = await processAllConfigs(config);
+  } else if (config) {
+    paramValues = [await processConfig(config)];
+  } else {
+    paramValues = [];
   }
+
+  let transform = text; // Default to original text
+  try {
+    transform = functions[key](text, ...paramValues).toString();
+  } catch (e) {
+    // Handle the error, potentially logging or falling back to the last valid transformation
+  }
+
   return {
     text: transform,
     operation: [
       {
         name: key,
-        params: [paramValue],
+        params: paramValues,
       },
     ],
     perform: flag.perform,
