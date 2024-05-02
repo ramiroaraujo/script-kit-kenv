@@ -30,6 +30,8 @@ type Transformation = {
   function: (...params: string[]) => string | number;
 };
 
+const imageFormats = ['.heic', '.png', '.gif', '.webp', '.jpg', '.jpeg'];
+
 const transformations: Transformation[] = [
   {
     option: {
@@ -143,7 +145,7 @@ const transformations: Transformation[] = [
         parameter: {
           name: 'format',
           description: 'format',
-          options: ['jpg', 'png', 'webp', 'heic'],
+          options: imageFormats,
         },
       },
     },
@@ -153,8 +155,6 @@ const transformations: Transformation[] = [
     },
   },
 ];
-
-let imageFormat = 'jpg';
 
 // map functions to keys, with an extra manualEdit (no op) function
 const functions = transformations.reduce((prev, curr) => {
@@ -334,13 +334,17 @@ ${ops.map((o) => `1. ${o}`).join('\n')}
   `);
 };
 
-const images = (await getSelectedFile()).split('\n');
-let commandsPreview = buildPreview(images, operations);
+const images = (await getSelectedFile())
+  .split('\n')
+  .filter((image) => imageFormats.includes(image.toLowerCase().split('.').pop()));
 
-if (commandsPreview.trim() === '') {
-  notify('Clipboard is empty or not a valid text');
+if (!images.length) {
+  notify('No images selected. Exiting...');
   exit();
 }
+let imageFormat: string;
+
+let commandsPreview = buildPreview(images, operations);
 
 // if there are args, parse them as operations, init clipboardText by running them all, and clear args
 if (args.length) {
@@ -528,8 +532,9 @@ const ops = operations
   .map((op) => `${magick} - ${functions[op.name].apply(null, op.params)} ${miff}`);
 images.forEach((image) => {
   const name = image.split('.').slice(0, -1).join('.');
+  const ext = image.split('.').pop();
   const head = `${magick} ${image} ${miff}`;
-  const tail = `${magick} - ${name}.${imageFormat}`;
+  const tail = `${magick} - ${name}.${imageFormat ?? ext}`;
   const cmd = [head, ...ops, tail].join(' | ');
   kit.exec(cmd);
 });
