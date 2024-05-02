@@ -1,5 +1,6 @@
 // Name: Breath
 // Schedule: */30 9-20 * * *
+// Exclude: true
 
 import '@johnlindquist/kit';
 
