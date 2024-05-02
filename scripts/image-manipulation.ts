@@ -1,8 +1,6 @@
 // Name: Image Manipulation
 
 import '@johnlindquist/kit';
-
-import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
 import { Choice, PromptConfig } from '../../../../.kit';
 import { binPath } from '../lib/bin-helper';
@@ -19,11 +17,11 @@ type Operation = { name: string; params: (string | number)[] };
 type TransformedOperation = {
   operation: Operation[];
 };
-type ParamPromptConfig = PromptConfig & { options?: string[] };
+type ParamPromptConfig = PromptConfig & { options?: string[]; required?: boolean };
 type TransformValue = {
   key: string;
   type?: 'prompt' | 'run';
-  parameter?: ParamPromptConfig;
+  parameter?: ParamPromptConfig | ParamPromptConfig[];
   operations?: Operation[];
 };
 type TransformChoice = Choice & { value?: TransformValue };
@@ -44,6 +42,7 @@ const transformations: Transformation[] = [
             name: 'width',
             description: 'width',
             defaultValue: '300',
+            required: true,
           },
           {
             name: 'height',
@@ -66,6 +65,7 @@ const transformations: Transformation[] = [
             name: 'degree',
             description: 'degree',
             defaultValue: '90',
+            required: true,
           },
         ],
       },
@@ -83,6 +83,7 @@ const transformations: Transformation[] = [
             name: 'width',
             description: 'width',
             defaultValue: '300',
+            required: true,
           },
           {
             name: 'height',
@@ -114,16 +115,24 @@ const transformations: Transformation[] = [
       description: 'Flip',
       value: {
         key: 'flip',
-        parameter: [
-          {
-            name: 'type',
-            description: 'type',
-            options: ['horizontal', 'vertical'],
-          },
-        ],
+        parameter: {
+          name: 'type',
+          description: 'type',
+          options: ['horizontal', 'vertical'],
+        },
       },
     },
     function: (type = 'horizontal') => (type === 'horizontal' ? '-flip' : '-flop'),
+  },
+  {
+    option: {
+      name: 'Grayscale',
+      description: 'Convert to Grayscale',
+      value: {
+        key: 'grayscale',
+      },
+    },
+    function: () => '-colorspace Gray',
   },
   {
     option: {
@@ -131,13 +140,11 @@ const transformations: Transformation[] = [
       description: 'Convert',
       value: {
         key: 'convert',
-        parameter: [
-          {
-            name: 'format',
-            description: 'format',
-            options: ['jpg', 'png', 'webp', 'heic'],
-          },
-        ],
+        parameter: {
+          name: 'format',
+          description: 'format',
+          options: ['jpg', 'png', 'webp', 'heic'],
+        },
       },
     },
     function: (format = 'jpg') => {
@@ -229,6 +236,10 @@ const operationOptions: TransformChoice[] = [
 const handleTransformation = async (text: string, transformation: TransformValue) => {
   const { key, parameter: config } = transformation;
 
+  const updatePreview = (name, params) => {
+    setPreview(buildPreview(images, [...operations, { name, params }]));
+  };
+
   const processConfig = async (configItem: ParamPromptConfig, params: string[] = []) => {
     return await arg(
       {
@@ -250,18 +261,21 @@ const handleTransformation = async (text: string, transformation: TransformValue
     );
   };
 
-  const processAllConfigs = async (configs: PromptConfig[]) => {
-    const results = [];
-    for (const configItem of configs) {
-      const result = await processConfig(configItem, results);
-      results.push(result);
-    }
-    return results;
+  const processFieldsConfig = async (config: ParamPromptConfig[]) => {
+    return await fields({
+      fields: config.map((c) => ({ label: c.name, required: c.required })),
+      onInit: () => {
+        updatePreview(key, []);
+      },
+      onChange: (input, state) => {
+        updatePreview(key, state.value);
+      },
+    });
   };
 
-  let paramValues;
+  let paramValues: string[];
   if (Array.isArray(config)) {
-    paramValues = await processAllConfigs(config);
+    paramValues = await processFieldsConfig(config);
   } else if (config) {
     paramValues = [await processConfig(config)];
   } else {
@@ -310,6 +324,7 @@ const buildPreview = (images: string[], operations: Operation[]) => {
       `Crop to ${width}x${height} at ${x}, ${y}`,
     flip: (type = '...') => `Flip ${type}`,
     convert: (format = '...') => `Convert to ${format}`,
+    grayscale: () => `Convert to Grayscale`,
   };
   if (!operations.length) return md(`## No operations to perform yet`);
   const ops = operations.map((op) => map[op.name](...op.params) as string);
