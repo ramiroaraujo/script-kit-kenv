@@ -311,9 +311,10 @@ const buildPreview = (images: string[], operations: Operation[]) => {
     flip: (type = '...') => `Flip ${type}`,
     convert: (format = '...') => `Convert to ${format}`,
   };
-  if (!operations.length) return md(`# No operations to perform yet`);
+  if (!operations.length) return md(`## No operations to perform yet`);
   const ops = operations.map((op) => map[op.name](...op.params) as string);
-  return md(`# Operations:
+  return md(`# ${images.length} Images to Transform
+  ## Operations:
 ${ops.map((o) => `1. ${o}`).join('\n')}
   `);
 };
