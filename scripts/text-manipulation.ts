@@ -784,6 +784,22 @@ const transformations: Transformation[] = [
   },
   {
     option: {
+      name: 'Subtract All Numbers',
+      description: 'Subtract all numbers in each line from the first number',
+      value: { key: 'sumAllNumbers' },
+    },
+    function: (text) => {
+      const numbers = text
+        .trim()
+        .split('\n')
+        .filter((line) => line.trim() !== '')
+        .map((line) => parseFloat(line.trim()));
+      const subtract = numbers[0] - numbers.slice(1).reduce((total, num) => total + num, 0);
+      return Math.round(subtract * 10 ** 5) / 10 ** 5; // round to 5 decimal places
+    },
+  },
+  {
+    option: {
       name: 'Trim Each Line',
       description: 'Trim whitespace from the beginning and end of each line',
       value: { key: 'trimEachLine' },
