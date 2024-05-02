@@ -5,6 +5,8 @@ import { CacheHelper } from '../lib/cache-helper';
 import { Choice, PromptConfig } from '../../../../.kit';
 import { binPath } from '../lib/bin-helper';
 
+const magick = binPath('magick');
+
 // cache setup
 const cache = await new CacheHelper('image-manipulation', 'never').init();
 let last: Operation[] = cache.get('last') ?? [];
@@ -30,7 +32,7 @@ type Transformation = {
   function: (...params: string[]) => string | number;
 };
 
-const imageFormats = ['.heic', '.png', '.gif', '.webp', '.jpg', '.jpeg'];
+const imageFormats = ['heic', 'png', 'gif', 'webp', 'jpg', 'jpeg'];
 
 const transformations: Transformation[] = [
   {
@@ -318,7 +320,7 @@ let operations: Operation[] = [];
 
 const buildPreview = (images: string[], operations: Operation[]) => {
   const map = {
-    resize: (width = '...', height = '...') => `Resize to ${width}x${height}`,
+    resize: (width = '...', height = '...') => `Resize to ${width} w, ${height} h`,
     rotate: (degree = '...') => `Rotate ${degree} degrees`,
     crop: (width = '...', height = '...', x = '...', y = '...') =>
       `Crop to ${width}x${height} at ${x}, ${y}`,
@@ -328,18 +330,28 @@ const buildPreview = (images: string[], operations: Operation[]) => {
   };
   if (!operations.length) return md(`## No operations to perform yet`);
   const ops = operations.map((op) => map[op.name](...op.params) as string);
-  return md(`# ${images.length} Images to Transform
+  const title = copiedImage.length
+    ? '# Transform Clipboard Image'
+    : `# ${images.length} Images to Transform`;
+  return md(`${title}
   ## Operations:
 ${ops.map((o) => `1. ${o}`).join('\n')}
   `);
 };
 
-const images = (await getSelectedFile())
-  .split('\n')
-  .filter((image) => imageFormats.includes(image.toLowerCase().split('.').pop()));
+let images: string[];
+const copiedImage = await clipboard.readImage();
+if (copiedImage.length) {
+  const tmpImage = `/tmp/${Date.now()}.png`;
+  images = [tmpImage];
+} else {
+  images = (await getSelectedFile())
+    .split('\n')
+    .filter((image) => imageFormats.includes(image.toLowerCase().split('.').pop()));
+}
 
 if (!images.length) {
-  notify('No images selected. Exiting...');
+  notify('No images selected or in clipboard. Exiting...');
   exit();
 }
 let imageFormat: string;
@@ -522,21 +534,36 @@ loop: while (true) {
   if (performFlag) break;
 }
 
+const buildCommand = (image: string) => {
+  const name = image.split('.').slice(0, -1).join('.');
+  const ext = image.split('.').pop();
+  const head = `${magick} ${image} ${miff}`;
+  const tail = `${magick} - ${name}.${copiedImage.length ? 'png' : imageFormat ?? ext}`;
+  return [head, ...ops, tail].join(' | ');
+};
+
 // store last transformations
 await cache.store('last', operations);
 
-const magick = binPath('magick');
 const miff = 'miff:-';
 const ops = operations
   .filter((op) => op.name !== 'convert')
   .map((op) => `${magick} - ${functions[op.name].apply(null, op.params)} ${miff}`);
-images.forEach((image) => {
-  const name = image.split('.').slice(0, -1).join('.');
-  const ext = image.split('.').pop();
-  const head = `${magick} ${image} ${miff}`;
-  const tail = `${magick} - ${name}.${imageFormat ?? ext}`;
-  const cmd = [head, ...ops, tail].join(' | ');
-  kit.exec(cmd);
-});
+
+// @todo fix bug when apply last or run from saved, the convert transformation is not applied
+if (copiedImage.length) {
+  const image = images[0];
+  await writeFile(image, copiedImage);
+  const cmd = buildCommand(image);
+  await kit.exec(cmd);
+  const transformedImage = await readFile(image);
+  await clipboard.writeImage(transformedImage);
+} else {
+  images.forEach(async (image) => {
+    const cmd = buildCommand(image);
+    log(cmd);
+    kit.exec(cmd);
+  });
+}
 
 notify({ title: 'Image Transformations Queued', message: `Converting ${images.length} images` });
