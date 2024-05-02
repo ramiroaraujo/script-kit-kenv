@@ -17,7 +17,6 @@ const timestamps = cache.get('timestamps') ?? {};
 type Operation = { name: string; params: (string | number)[] };
 
 type TransformedOperation = {
-  text: string;
   operation: Operation[];
 };
 type ParamPromptConfig = PromptConfig & { options?: string[] };
@@ -136,31 +135,38 @@ const transformations: Transformation[] = [
           {
             name: 'format',
             description: 'format',
-            options: ['jpg', 'png'],
+            options: ['jpg', 'png', 'webp', 'heic'],
           },
         ],
       },
     },
-    function: (format = 'jpg') => (imageFormat = format),
+    function: (format = 'jpg') => {
+      imageFormat = format;
+      return '';
+    },
   },
 ];
 
 let imageFormat = 'jpg';
 
-// ----
-
 // map functions to keys, with an extra manualEdit (no op) function
-const functions = transformations.reduce(
-  (prev, curr) => {
-    prev[curr.option.value.key] = curr.function;
-    return prev;
-  },
-  { manualEdit: (text: string) => text },
-);
+const functions = transformations.reduce((prev, curr) => {
+  prev[curr.option.value.key] = curr.function;
+  return prev;
+}, {});
 
 // map options
 const options = transformations.map((o) => o.option as TransformChoice);
 
+const camelCase = (text) =>
+  text
+    .split('\n')
+    .map((line) =>
+      line
+        .replace(/[\s-_]+(\w)/g, (_, p) => p.toUpperCase())
+        .replace(/^[A-Z]/, (match) => match.toLowerCase()),
+    )
+    .join('\n');
 const reverseCamelCase = (text) =>
   text
     .split('\n')
@@ -236,11 +242,7 @@ const handleTransformation = async (text: string, transformation: TransformValue
       configItem.options ||
         ((input) => {
           try {
-            const preview = buildPreview(images, [
-              ...operations,
-              { name: key, params: [...params, input] },
-            ]);
-            return md(`<pre>${preview}</pre>`);
+            return buildPreview(images, [...operations, { name: key, params: [...params, input] }]);
           } catch (e) {
             return md(`<pre>${text}</pre>`);
           }
@@ -266,15 +268,10 @@ const handleTransformation = async (text: string, transformation: TransformValue
     paramValues = [];
   }
 
-  let transform = text; // Default to original text
-  try {
-    transform = functions[key](text, ...paramValues).toString();
-  } catch (e) {
-    // Handle the error, potentially logging or falling back to the last valid transformation
-  }
+  // run the transformation function with the params, possible side-effects needed
+  functions[key](...paramValues);
 
   return {
-    text: transform,
     operation: [
       {
         name: key,
@@ -302,26 +299,23 @@ const handleEscape = async (stepBack: boolean) => {
   exit();
 };
 
-const runAllTransformations = (input: string, operations: Operation[]) => {
-  return operations.reduce(
-    (prev, curr) => {
-      prev.text = functions[curr.name].apply(null, [prev.text, ...curr.params]).toString();
-      prev.operation.push(curr);
-      return prev;
-    },
-    { text: input, operation: [] } as TransformedOperation,
-  );
-};
-
 // store performed operations
 let operations: Operation[] = [];
 
 const buildPreview = (images: string[], operations: Operation[]) => {
-  const ops = operations.map((op) => functions[op.name].apply(null, op.params));
-  return images
-    .map((img) => img.split('/').pop())
-    .map((img) => `magick ${img} ${ops.join(' ')} ${img}`.replace(/\s{2,}/g, ' '))
-    .join('\n');
+  const map = {
+    resize: (width = '...', height = '...') => `Resize to ${width}x${height}`,
+    rotate: (degree = '...') => `Rotate ${degree} degrees`,
+    crop: (width = '...', height = '...', x = '...', y = '...') =>
+      `Crop to ${width}x${height} at ${x}, ${y}`,
+    flip: (type = '...') => `Flip ${type}`,
+    convert: (format = '...') => `Convert to ${format}`,
+  };
+  if (!operations.length) return md(`# No operations to perform yet`);
+  const ops = operations.map((op) => map[op.name](...op.params) as string);
+  return md(`# Operations:
+${ops.map((o) => `1. ${o}`).join('\n')}
+  `);
 };
 
 const images = (await getSelectedFile()).split('\n');
@@ -338,7 +332,7 @@ if (args.length) {
     return JSON.parse(arg) as Operation;
   });
 
-  commandsPreview = runAllTransformations(commandsPreview, operations).text;
+  commandsPreview = buildPreview(images, operations);
 
   args = [];
 }
@@ -349,9 +343,9 @@ loop: while (true) {
   const transformation = await arg<TransformValue>(
     {
       preview: () => {
-        return md(`<pre>${commandsPreview}</pre>`);
+        return commandsPreview;
       },
-      placeholder: 'Choose a text transformation',
+      placeholder: 'Choose an image transformation',
       hint: operations.length
         ? '> ' + operations.map((o) => reverseCamelCase(o.name)).join(' > ')
         : '',
@@ -422,17 +416,11 @@ loop: while (true) {
           preview: () => {
             try {
               if (option.value.key === 'last') {
-                const result = runAllTransformations(commandsPreview, last);
-                return md(`<pre>${result.text}</pre>`);
+                return buildPreview(images, last);
               }
-              const preview = buildPreview(images, [
-                ...operations,
-                { name: option.value.key, params: [] },
-              ]);
-              return md(`<pre>${preview}</pre>`);
+              return buildPreview(images, [...operations, { name: option.value.key, params: [] }]);
             } catch (e) {
-              const preview = buildPreview(images, operations);
-              return md(`<pre>${preview}</pre>`);
+              return buildPreview(images, operations);
             }
           },
         };
@@ -444,17 +432,16 @@ loop: while (true) {
     case 'finish':
       break loop;
     case 'last': {
-      // perform last transformations, overwrite clipboardText and operations, and remove last from local memory
-      const result = runAllTransformations(commandsPreview, last);
-      commandsPreview = result.text;
-      operations = result.operation;
+      // perform last transformations
+      commandsPreview = buildPreview(images, last);
+      operations = last;
       last = [];
       break;
     }
     case 'save': {
       // ask for a name, store operations, and exit
       const transformationName = await arg('Enter a name for this transformations:');
-      persisted[functions['camelCase'](transformationName)] = operations;
+      persisted[camelCase(transformationName)] = operations;
       await cache.store('persisted', persisted);
       break loop;
     }
@@ -486,23 +473,20 @@ loop: while (true) {
         }
       } else {
         const savedTransformation = persisted[savedTransformationName];
-        const result = runAllTransformations(commandsPreview, savedTransformation);
-        commandsPreview = result.text;
-        operations = result.operation;
+        commandsPreview = buildPreview(images, savedTransformation);
+        operations = savedTransformation;
         last = [];
       }
       break;
     }
     default: {
-      const result: TransformedOperation & { perform?: boolean } =
-        transformation.type === 'run'
-          ? runAllTransformations(commandsPreview, transformation.operations)
-          : await handleTransformation(commandsPreview, transformation);
+      const result: TransformedOperation & { perform?: boolean } = await handleTransformation(
+        commandsPreview,
+        transformation,
+      );
 
       // mark to finish if cmd+enter was pressed in the params prompt
       if (!performFlag && result.perform) performFlag = true;
-
-      commandsPreview = result.text;
 
       // save operations
       operations.push(...result.operation);
@@ -530,7 +514,6 @@ images.forEach((image) => {
   const name = image.split('.').slice(0, -1).join('.');
   const head = `${magick} ${image} ${miff}`;
   const tail = `${magick} - ${name}.${imageFormat}`;
-
   const cmd = [head, ...ops, tail].join(' | ');
   kit.exec(cmd);
 });
