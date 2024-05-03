@@ -5,4 +5,4 @@
 import '@johnlindquist/kit';
 
 await playAudioFile(projectPath('assets/breath-notification.m4a'));
-notify(`Breath in, breath out. 🧘‍♂️`);
+notify({ title: `Breath in, breath out. 🧘‍♂️`, message: 'Take a deep breath' });
