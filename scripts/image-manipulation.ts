@@ -552,7 +552,10 @@ const ops = operations
   .filter((op) => op.name !== 'convert')
   .map((op) => `${magick} - ${functions[op.name].apply(null, op.params)} ${miff}`);
 
-// @todo fix bug when apply last or run from saved, the convert transformation is not applied
+operations
+  .filter((op) => op.name === 'convert')
+  .forEach((op) => functions[op.name].apply(null, op.params));
+
 if (copiedImage.length) {
   const image = images[0];
   await writeFile(image, copiedImage);
