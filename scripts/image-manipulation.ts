@@ -32,7 +32,9 @@ type Transformation = {
   function: (...params: string[]) => string | number;
 };
 
-const imageFormats = ['heic', 'png', 'gif', 'webp', 'jpg', 'jpeg'];
+const imageFormats = ['heic', 'png', 'gif', 'webp', { name: 'jpg', ext: ['jpg', 'jpeg'] }];
+const convertFormats = Object.values(imageFormats).map((f) => (typeof f === 'string' ? f : f.name));
+const validFormats = imageFormats.map((f) => (typeof f === 'string' ? f : f.ext)).flat();
 
 const transformations: Transformation[] = [
   {
@@ -147,7 +149,7 @@ const transformations: Transformation[] = [
         parameter: {
           name: 'format',
           description: 'format',
-          options: imageFormats,
+          options: convertFormats,
         },
       },
     },
@@ -347,7 +349,7 @@ if (copiedImage.length) {
 } else {
   images = (await getSelectedFile())
     .split('\n')
-    .filter((image) => imageFormats.includes(image.toLowerCase().split('.').pop()));
+    .filter((image) => validFormats.includes(image.toLowerCase().split('.').pop()));
 }
 
 if (!images.length) {
