@@ -2,8 +2,8 @@
 
 import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
-import { Choice, PromptConfig } from '../../../../.kit';
 import { binPath } from '../lib/bin-helper';
+import { Choice, PromptConfig } from '@johnlindquist/kit';
 
 const magick = binPath('magick');
 
@@ -169,29 +169,9 @@ const functions = transformations.reduce((prev, curr) => {
 // map options
 const options = transformations.map((o) => o.option as TransformChoice);
 
-const camelCase = (text) =>
-  text
-    .split('\n')
-    .map((line) =>
-      line
-        .replace(/[\s-_]+(\w)/g, (_, p) => p.toUpperCase())
-        .replace(/^[A-Z]/, (match) => match.toLowerCase()),
-    )
-    .join('\n');
-const reverseCamelCase = (text) =>
-  text
-    .split('\n')
-    .map((line) =>
-      line
-        .replace(/([A-Z])/g, ' $1')
-        .replace(/^./, (str) => str.toUpperCase())
-        .trim(),
-    )
-    .join('\n');
-
 const savedTransformations = Object.keys(persisted).map((name) => {
   return {
-    name: reverseCamelCase(name),
+    name: name,
     description: persisted[name].map(({ name }) => name).join(' > '),
     value: {
       key: name,
@@ -317,6 +297,18 @@ const handleEscape = async (stepBack: boolean) => {
   exit();
 };
 
+const runAllTransformations = (operations: Operation[]) => {
+  return operations.reduce(
+    (prev, curr) => {
+      debugger;
+      functions[curr.name].apply(null, curr.params);
+      prev.operation.push(curr);
+      return prev;
+    },
+    { operation: [] } as TransformedOperation,
+  );
+};
+
 // store performed operations
 let operations: Operation[] = [];
 
@@ -380,9 +372,7 @@ loop: while (true) {
         return commandsPreview;
       },
       placeholder: 'Choose an image transformation',
-      hint: operations.length
-        ? '> ' + operations.map((o) => reverseCamelCase(o.name)).join(' > ')
-        : '',
+      hint: operations.length ? '> ' + operations.map((o) => o.name).join(' > ') : '',
       onEscape: async () => {
         await handleEscape(true);
       },
@@ -475,7 +465,7 @@ loop: while (true) {
     case 'save': {
       // ask for a name, store operations, and exit
       const transformationName = await arg('Enter a name for this transformations:');
-      persisted[camelCase(transformationName)] = operations;
+      persisted[transformationName] = operations;
       await cache.store('persisted', persisted);
       break loop;
     }
@@ -489,7 +479,7 @@ loop: while (true) {
         },
         Object.keys(persisted).map((name) => {
           return {
-            name: reverseCamelCase(name),
+            name: name,
             value: name,
           };
         }),
@@ -514,10 +504,11 @@ loop: while (true) {
       break;
     }
     default: {
-      const result: TransformedOperation & { perform?: boolean } = await handleTransformation(
-        commandsPreview,
-        transformation,
-      );
+      // @todo review this logic, I think it can be simplified
+      const result: TransformedOperation & { perform?: boolean } =
+        transformation.type === 'run'
+          ? runAllTransformations(transformation.operations)
+          : await handleTransformation(commandsPreview, transformation);
 
       // mark to finish if cmd+enter was pressed in the params prompt
       if (!performFlag && result.perform) performFlag = true;
