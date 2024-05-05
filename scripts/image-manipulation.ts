@@ -333,14 +333,17 @@ ${ops.map((o) => `1. ${o}`).join('\n')}
 };
 
 let images: string[];
-const copiedImage = await clipboard.readImage();
-if (copiedImage.length) {
-  const tmpImage = `/tmp/${Date.now()}.png`;
-  images = [tmpImage];
-} else {
-  images = (await getSelectedFile())
-    .split('\n')
-    .filter((image) => validFormats.includes(image.toLowerCase().split('.').pop()));
+images = (await getSelectedFile())
+  .split('\n')
+  .filter((image) => validFormats.includes(image.toLowerCase().split('.').pop()));
+
+let copiedImage: Buffer = Buffer.from([]);
+if (!images.length) {
+  copiedImage = await clipboard.readImage();
+  if (copiedImage.length) {
+    const tmpImage = `/tmp/${Date.now()}.png`;
+    images = [tmpImage];
+  }
 }
 
 if (!images.length) {
