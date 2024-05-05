@@ -764,7 +764,16 @@ const transformations: Transformation[] = [
         parameter: { name: 'Separator', description: 'Enter a separator to split lines' },
       },
     },
-    function: (text, separator) => text.split(separator).join('\n'),
+    function: (text, separator) => {
+      let splitRegex;
+      try {
+        splitRegex = new RegExp(separator);
+      } catch (e) {
+        // Not a valid regex, use as string
+        splitRegex = separator;
+      }
+      return text.split(splitRegex).join('\n');
+    },
   },
   {
     option: {
