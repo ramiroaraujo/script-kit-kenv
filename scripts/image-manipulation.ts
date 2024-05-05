@@ -325,7 +325,7 @@ const buildPreview = (images: string[], operations: Operation[]) => {
   const ops = operations.map((op) => map[op.name](...op.params) as string);
   const title = copiedImage.length
     ? '# Transform Clipboard Image'
-    : `# ${images.length} Images to Transform`;
+    : `# ${images.length} Selected Image${images.length > 1 ? 's' : ''} to Transform`;
   return md(`${title}
   ## Operations:
 ${ops.map((o) => `1. ${o}`).join('\n')}
