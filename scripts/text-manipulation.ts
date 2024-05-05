@@ -4,7 +4,7 @@
 
 import '@johnlindquist/kit';
 import { CacheHelper } from '../lib/cache-helper';
-import { Choice, PromptConfig } from '../../../../.kit';
+import { Choice, PromptConfig } from '@johnlindquist/kit';
 
 const Mexp = await npm('math-expression-evaluator');
 
