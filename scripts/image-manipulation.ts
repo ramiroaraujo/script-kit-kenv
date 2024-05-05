@@ -300,7 +300,6 @@ const handleEscape = async (stepBack: boolean) => {
 const runAllTransformations = (operations: Operation[]) => {
   return operations.reduce(
     (prev, curr) => {
-      debugger;
       functions[curr.name].apply(null, curr.params);
       prev.operation.push(curr);
       return prev;
@@ -390,7 +389,6 @@ loop: while (true) {
         if (option.value.key === 'save' && !operations.length) return null;
         // hide listSaved if no saved transformations yet
         if (option.value.key === 'listSaved' && Object.keys(persisted).length === 0) return null;
-
         // show last transformation names in description as a trail of transformations
         if (option.value.key === 'last') {
           option.description = last.map((o) => o.name).join(' > ');
@@ -557,7 +555,6 @@ if (copiedImage.length) {
 } else {
   images.forEach(async (image) => {
     const cmd = buildCommand(image);
-    log(cmd);
     kit.exec(cmd);
   });
 }
