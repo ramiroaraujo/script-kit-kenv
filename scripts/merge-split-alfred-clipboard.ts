@@ -3,7 +3,7 @@
 
 import '@johnlindquist/kit';
 import { ClipboardService } from '../lib/clipboard-service';
-import { Action } from '../../../../.kit';
+import { Action } from '@johnlindquist/kit';
 
 const db = new ClipboardService();
 
@@ -49,16 +49,9 @@ const actions: Action[] = [
   },
 ];
 
-const action = await arg('Choose action', ['Split each line', 'Merge', 'Split'], actions);
+const action = await arg('Choose action', ['Merge', 'Split'], actions);
 
-if (action === 'Split each line') {
-  const splitText = (await clipboard.readText())
-    .split('\n')
-    .map((item) => item.trim())
-    .filter(Boolean);
-  await writeSplitClipboard(splitText);
-  notify('Split clipboard content line by line and stored in Alfred clipboard');
-} else if (action === 'Merge') {
+if (action === 'Merge') {
   const count = await arg(
     {
       placeholder: 'clipboard items to merge',
