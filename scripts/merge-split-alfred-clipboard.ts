@@ -49,9 +49,16 @@ const actions: Action[] = [
   },
 ];
 
-const action = await arg('Choose action', ['Merge', 'Split'], actions);
+const action = await arg('Choose action', ['Split each line', 'Merge', 'Split'], actions);
 
-if (action === 'Merge') {
+if (action === 'Split each line') {
+  const splitText = (await clipboard.readText())
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  await writeSplitClipboard(splitText);
+  notify('Split clipboard content line by line and stored in Alfred clipboard');
+} else if (action === 'Merge') {
   const count = await arg(
     {
       placeholder: 'clipboard items to merge',
