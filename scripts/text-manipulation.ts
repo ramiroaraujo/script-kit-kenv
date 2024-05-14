@@ -33,6 +33,15 @@ type Transformation = {
 };
 
 const transformations: Transformation[] = [
+  // url decode
+  {
+    option: {
+      name: 'URL Decode',
+      description: 'Decode URL encoded text',
+      value: { key: 'urlDecode' },
+    },
+    function: (text) => decodeURIComponent(text),
+  },
   {
     option: {
       name: 'Append Text to All Lines',
