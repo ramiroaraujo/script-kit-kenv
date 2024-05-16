@@ -531,8 +531,8 @@ loop: while (true) {
 const buildCommand = (image: string) => {
   const name = image.split('.').slice(0, -1).join('.');
   const ext = image.split('.').pop();
-  const head = `${magick} ${image} ${miff}`;
-  const tail = `${magick} - ${name}.${copiedImage.length ? 'png' : imageFormat ?? ext}`;
+  const head = `${magick} "${image}" ${miff}`;
+  const tail = `${magick} - "${name}.${copiedImage.length ? 'png' : imageFormat ?? ext}"`;
   return [head, ...ops, tail].join(' | ');
 };
 
@@ -558,6 +558,7 @@ if (copiedImage.length) {
 } else {
   images.forEach(async (image) => {
     const cmd = buildCommand(image);
+    log(cmd);
     kit.exec(cmd);
   });
 }
