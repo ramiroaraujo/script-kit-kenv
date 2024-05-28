@@ -804,7 +804,7 @@ const transformations: Transformation[] = [
     option: {
       name: 'Subtract All Numbers',
       description: 'Subtract all numbers in each line from the first number',
-      value: { key: 'sumAllNumbers' },
+      value: { key: 'subtractAllNumbers' },
     },
     function: (text) => {
       const numbers = text
