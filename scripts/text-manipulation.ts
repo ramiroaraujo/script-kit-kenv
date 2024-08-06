@@ -29,7 +29,7 @@ type TransformValue = {
 type TransformChoice = Choice & { value?: TransformValue };
 type Transformation = {
   option: TransformChoice;
-  function: (text: string, ...params: string[]) => string | number;
+  function: (text: string, ...params: string[]) => Promise<string | number>;
 };
 
 const transformations: Transformation[] = [
@@ -40,7 +40,7 @@ const transformations: Transformation[] = [
       description: 'Decode URL encoded text',
       value: { key: 'urlDecode' },
     },
-    function: (text) => decodeURIComponent(text),
+    function: async (text) => decodeURIComponent(text),
   },
   {
     option: {
@@ -55,7 +55,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, suffix) =>
+    function: async (text, suffix) =>
       text
         .split('\n')
         .map((line) => line + suffix)
@@ -67,7 +67,7 @@ const transformations: Transformation[] = [
       description: 'Decode text using Base64',
       value: { key: 'base64Decode' },
     },
-    function: (text) => Buffer.from(text, 'base64').toString('utf-8'),
+    function: async (text) => Buffer.from(text, 'base64').toString('utf-8'),
   },
   {
     option: {
@@ -75,7 +75,7 @@ const transformations: Transformation[] = [
       description: 'Encode text using Base64',
       value: { key: 'base64Encode' },
     },
-    function: (text) => Buffer.from(text).toString('base64'),
+    function: async (text) => Buffer.from(text).toString('base64'),
   },
   {
     option: {
@@ -83,7 +83,7 @@ const transformations: Transformation[] = [
       description: 'Convert text to camelCase',
       value: { key: 'camelCase' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) =>
@@ -99,7 +99,7 @@ const transformations: Transformation[] = [
       description: 'Convert text to Capital Case',
       value: { key: 'capitalize' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) =>
@@ -148,7 +148,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, regex) => {
+    function: async (text, regex) => {
       if (regex.length === 0) return text;
       const pattern = new RegExp(regex);
       return text
@@ -168,7 +168,7 @@ const transformations: Transformation[] = [
         key: 'convertToIntegers',
       },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) => {
@@ -197,7 +197,7 @@ const transformations: Transformation[] = [
         ],
       },
     },
-    function: (text, columns, separator = ',') => {
+    function: async (text, columns, separator = ',') => {
       if (separator === '\\t') separator = '\t';
       return text
         .split('\n')
@@ -217,7 +217,7 @@ const transformations: Transformation[] = [
       description: 'Count the number of characters',
       value: { key: 'countCharacters' },
     },
-    function: (text) => text.length,
+    function: async (text) => text.length,
   },
   {
     option: {
@@ -225,7 +225,7 @@ const transformations: Transformation[] = [
       description: 'Count the number of lines',
       value: { key: 'countLines' },
     },
-    function: (text) => text.split('\n').length,
+    function: async (text) => text.split('\n').length,
   },
   {
     option: {
@@ -233,7 +233,7 @@ const transformations: Transformation[] = [
       description: 'Count the number of words',
       value: { key: 'countWords' },
     },
-    function: (text) => text.trim().split(/\s+/).length,
+    function: async (text) => text.trim().split(/\s+/).length,
   },
   {
     option: {
@@ -243,7 +243,7 @@ const transformations: Transformation[] = [
         key: 'extractAllNumbers',
       },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) => {
@@ -259,7 +259,7 @@ const transformations: Transformation[] = [
       description: 'Extract and normalize URLs from text',
       value: { key: 'extractUrls' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) => {
@@ -281,7 +281,7 @@ const transformations: Transformation[] = [
         'Extract and auto-detect formatted number (optional currencies) and convert to plain number',
       value: { key: 'convertFormattedNumber' },
     },
-    function: (text) => {
+    function: async (text) => {
       return text
         .split('\n')
         .map((line) => line.trim())
@@ -326,7 +326,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, filter) => {
+    function: async (text, filter) => {
       if (filter.length < 3) return text;
       const index = text.toLowerCase().indexOf(filter.toLowerCase());
       if (index === -1) return text;
@@ -344,7 +344,7 @@ const transformations: Transformation[] = [
       description: 'Prepend numbers to each line',
       value: { key: 'generateNumberedList' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line, index) => `${index + 1}. ${line}`)
@@ -356,7 +356,7 @@ const transformations: Transformation[] = [
       description: 'Convert regular valid object to JSON',
       value: { key: 'convertObjectToJSON' },
     },
-    function: (text) => {
+    function: async (text) => {
       try {
         const evaluated = eval(`(${text})`);
         return JSON.stringify(evaluated, null, 2);
@@ -378,7 +378,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, separator) => text.split('\n').join(separator),
+    function: async (text, separator) => text.split('\n').join(separator),
   },
   {
     option: {
@@ -386,7 +386,7 @@ const transformations: Transformation[] = [
       description: 'Minifies JSON String',
       value: { key: 'jsonMinify' },
     },
-    function: (text) => JSON.stringify(JSON.parse(text)),
+    function: async (text) => JSON.stringify(JSON.parse(text)),
   },
   {
     option: {
@@ -394,7 +394,7 @@ const transformations: Transformation[] = [
       description: 'Formats JSON strings for better readability',
       value: { key: 'jsonPrettyPrint' },
     },
-    function: (text) => JSON.stringify(JSON.parse(text), null, 2),
+    function: async (text) => JSON.stringify(JSON.parse(text), null, 2),
   },
   {
     option: {
@@ -402,7 +402,7 @@ const transformations: Transformation[] = [
       description: 'Convert text to kebab-case / hyphen-case',
       value: { key: 'kebabCase' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) =>
@@ -425,7 +425,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, regex) => {
+    function: async (text, regex) => {
       if (regex.length === 0) return text;
       const pattern = new RegExp(regex, 'i');
       return text
@@ -440,7 +440,7 @@ const transformations: Transformation[] = [
       description: 'Keep only duplicate lines in the text',
       value: { key: 'keepOnlyDuplicateLines' },
     },
-    function: (text) => {
+    function: async (text) => {
       const lines = text.split('\n');
       const duplicates = lines.filter((item, index) => lines.indexOf(item) !== index);
       return [...new Set(duplicates)].join('\n');
@@ -466,7 +466,7 @@ const transformations: Transformation[] = [
         ],
       },
     },
-    function: (text, limit, offset = '0') => {
+    function: async (text, limit, offset = '0') => {
       const offsetNumber = parseInt(offset);
       const limitNumber = parseInt(limit);
       return text
@@ -481,7 +481,7 @@ const transformations: Transformation[] = [
       description: 'Transform the entire text to lower case',
       value: { key: 'lowerCase' },
     },
-    function: (text) => text.toLowerCase(),
+    function: async (text) => text.toLowerCase(),
   },
   {
     option: {
@@ -496,7 +496,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, expression) =>
+    function: async (text, expression) =>
       text
         .split('\n')
         .map((line) => {
@@ -522,7 +522,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, prefix) =>
+    function: async (text, prefix) =>
       text
         .split('\n')
         .map((line) => prefix + line)
@@ -534,7 +534,7 @@ const transformations: Transformation[] = [
       description: 'Remove all new lines from the text',
       value: { key: 'removeAllNewLines' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) => line.trim())
@@ -546,7 +546,7 @@ const transformations: Transformation[] = [
       description: 'Remove duplicate lines from the text',
       value: { key: 'removeDuplicateLines' },
     },
-    function: (text) => {
+    function: async (text) => {
       const lines = text.split('\n');
       return [...new Set(lines)].join('\n');
     },
@@ -557,7 +557,7 @@ const transformations: Transformation[] = [
       description: 'Remove empty lines from the text',
       value: { key: 'removeEmptyLines' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .filter((line) => line.trim() !== '')
@@ -576,7 +576,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, regex) => {
+    function: async (text, regex) => {
       if (regex.length === 0) return text;
       const pattern = new RegExp(regex, 'i');
       return text
@@ -598,7 +598,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, regex) => {
+    function: async (text, regex) => {
       const pattern = new RegExp(regex);
       return text
         .split('\n')
@@ -612,7 +612,7 @@ const transformations: Transformation[] = [
       description: 'Remove wrapping characters from each line',
       value: { key: 'removeWrapping' },
     },
-    function: (text) => {
+    function: async (text) => {
       const lines = text.split('\n');
       const matchingPairs = [
         ['(', ')'],
@@ -665,7 +665,7 @@ const transformations: Transformation[] = [
         ],
       },
     },
-    function: (text, regex, replacement = '***') => {
+    function: async (text, regex, replacement = '***') => {
       if (regex.length === 0) return text;
       const pattern = new RegExp(regex, 'g');
       return text
@@ -680,7 +680,7 @@ const transformations: Transformation[] = [
       description: 'Convert camelCase to Human readable',
       value: { key: 'reverseCamelCase' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) =>
@@ -697,7 +697,7 @@ const transformations: Transformation[] = [
       description: 'Reverse the characters in the text',
       value: { key: 'reverseCharacters' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) => line.split('').reverse().join(''))
@@ -709,7 +709,7 @@ const transformations: Transformation[] = [
       description: 'Reverse the order of lines',
       value: { key: 'reverseLines' },
     },
-    function: (text) => text.split('\n').reverse().join('\n'),
+    function: async (text) => text.split('\n').reverse().join('\n'),
   },
   {
     option: {
@@ -717,7 +717,7 @@ const transformations: Transformation[] = [
       description: 'Randomly shuffle the order of lines',
       value: { key: 'shuffleLines' },
     },
-    function: (text) => {
+    function: async (text) => {
       const lines = text.split('\n');
       for (let i = lines.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -734,7 +734,7 @@ const transformations: Transformation[] = [
       description: 'Convert text to snake_case',
       value: { key: 'snakeCase' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) =>
@@ -750,7 +750,7 @@ const transformations: Transformation[] = [
       description: 'Sort lines alphabetically',
       value: { key: 'sortLinesAlphabetically' },
     },
-    function: (text) => text.split('\n').sort().join('\n'),
+    function: async (text) => text.split('\n').sort().join('\n'),
   },
   {
     option: {
@@ -758,7 +758,7 @@ const transformations: Transformation[] = [
       description: 'Sort lines numerically',
       value: { key: 'sortLinesNumerically' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .sort((a, b) => parseInt(a) - parseInt(b))
@@ -773,7 +773,7 @@ const transformations: Transformation[] = [
         parameter: { name: 'Separator', description: 'Enter a separator to split lines' },
       },
     },
-    function: (text, separator) => {
+    function: async (text, separator) => {
       let splitRegex;
       try {
         splitRegex = new RegExp(separator);
@@ -790,7 +790,7 @@ const transformations: Transformation[] = [
       description: 'Sum all numbers in each line',
       value: { key: 'sumAllNumbers' },
     },
-    function: (text) => {
+    function: async (text) => {
       const sum = text
         .trim()
         .split('\n')
@@ -806,7 +806,7 @@ const transformations: Transformation[] = [
       description: 'Subtract all numbers in each line from the first number',
       value: { key: 'subtractAllNumbers' },
     },
-    function: (text) => {
+    function: async (text) => {
       const numbers = text
         .trim()
         .split('\n')
@@ -822,7 +822,7 @@ const transformations: Transformation[] = [
       description: 'Trim whitespace from the beginning and end of each line',
       value: { key: 'trimEachLine' },
     },
-    function: (text) =>
+    function: async (text) =>
       text
         .split('\n')
         .map((line) => line.trim())
@@ -834,7 +834,7 @@ const transformations: Transformation[] = [
       description: 'Transform the entire text to upper case',
       value: { key: 'upperCase' },
     },
-    function: (text) => text.toUpperCase(),
+    function: async (text) => text.toUpperCase(),
   },
   {
     option: {
@@ -850,7 +850,7 @@ const transformations: Transformation[] = [
         },
       },
     },
-    function: (text, wrapper) => {
+    function: async (text, wrapper) => {
       const eolChars = [',', '.', ';'];
       const [left, right] = wrapper.length === 1 ? [wrapper, wrapper] : wrapper.split('');
       return text
@@ -875,15 +875,26 @@ const functions = transformations.reduce(
     prev[curr.option.value.key] = curr.function;
     return prev;
   },
-  { manualEdit: (text: string) => text },
+  { manualEdit: async (text: string) => text },
 );
+
+const reverse = (text) =>
+  text
+    .split('\n')
+    .map((line) =>
+      line
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (str) => str.toUpperCase())
+        .trim(),
+    )
+    .join('\n');
 
 // map options
 const options = transformations.map((o) => o.option as TransformChoice);
 
 const savedTransformations = Object.keys(persisted).map((name) => {
   return {
-    name: functions['reverseCamelCase'](name),
+    name: reverse(name),
     description: persisted[name].map(({ name }) => name).join(' > '),
     value: {
       key: name,
@@ -956,9 +967,10 @@ const handleTransformation = async (text: string, transformation: TransformValue
           await handleEscape(false);
         },
       },
-      (input) => {
+      async (input) => {
         try {
-          return md(`<pre>${functions[key](text, ...[...acc, input])}</pre>`);
+          const result = await functions[key](text, ...[...acc, input]);
+          return md(`<pre>${result}</pre>`);
         } catch (e) {
           return md(`<pre>${text}</pre>`);
         }
@@ -986,7 +998,7 @@ const handleTransformation = async (text: string, transformation: TransformValue
 
   let transform = text; // Default to original text
   try {
-    transform = functions[key](text, ...paramValues).toString();
+    transform = (await functions[key](text, ...paramValues)).toString();
   } catch (e) {
     // Handle the error, potentially logging or falling back to the last valid transformation
   }
@@ -1021,15 +1033,15 @@ const handleEscape = async (stepBack: boolean) => {
   exit();
 };
 
-const runAllTransformations = (input: string, operations: Operation[]) => {
-  return operations.reduce(
-    (prev, curr) => {
-      prev.text = functions[curr.name].apply(null, [prev.text, ...curr.params]).toString();
-      prev.operation.push(curr);
-      return prev;
-    },
-    { text: input, operation: [] } as TransformedOperation,
-  );
+const runAllTransformations = async (input: string, operations: Operation[]) => {
+  const result = { text: input, operation: [] } as TransformedOperation;
+  for (const curr of operations) {
+    result.text = (
+      await functions[curr.name].apply(null, [result.text, ...curr.params])
+    ).toString();
+    result.operation.push(curr);
+  }
+  return result;
 };
 
 let clipboardText = await clipboard.readText();
@@ -1048,7 +1060,7 @@ if (args.length) {
     return JSON.parse(arg) as Operation;
   });
 
-  clipboardText = runAllTransformations(clipboardText, operations).text;
+  clipboardText = (await runAllTransformations(clipboardText, operations)).text;
 
   args = [];
 }
@@ -1062,9 +1074,7 @@ loop: while (true) {
         return md(`<pre>${clipboardText}</pre>`);
       },
       placeholder: 'Choose a text transformation',
-      hint: operations.length
-        ? '> ' + operations.map((o) => functions['reverseCamelCase'](o.name)).join(' > ')
-        : '',
+      hint: operations.length ? '> ' + operations.map((o) => reverse(o.name)).join(' > ') : '',
       onEscape: async () => {
         await handleEscape(true);
       },
@@ -1073,6 +1083,7 @@ loop: while (true) {
     [...operationOptions, ...options, ...savedTransformations]
       .map((option) => {
         // hide init if there are already operations
+        debugger;
         if (option.value.key === 'init' && operations.length) return null;
         // hide last transformation if there is none, or already performed operations
         if (option.value.key === 'last' && (!last.length || operations.length)) return null;
@@ -1144,14 +1155,15 @@ loop: while (true) {
       .map((option) => {
         return {
           ...option,
-          preview: () => {
+          preview: async () => {
             try {
               if (option.value.key === 'last') {
-                const result = runAllTransformations(clipboardText, last);
+                const result = await runAllTransformations(clipboardText, last);
                 return md(`<pre>${result.text}</pre>`);
               }
               if (option.value['parameter']) throw '';
-              return md(`<pre>${functions[option.value.key](clipboardText)}</pre>`);
+              const result = await functions[option.value.key](clipboardText);
+              return md(`<pre>${result}</pre>`);
             } catch (e) {
               return md(`<pre>${clipboardText}</pre>`);
             }
@@ -1166,7 +1178,7 @@ loop: while (true) {
       break loop;
     case 'last': {
       // perform last transformations, overwrite clipboardText and operations, and remove last from local memory
-      const result = runAllTransformations(clipboardText, last);
+      const result = await runAllTransformations(clipboardText, last);
       clipboardText = result.text;
       operations = result.operation;
       last = [];
@@ -1175,7 +1187,7 @@ loop: while (true) {
     case 'save': {
       // ask for a name, store operations, and exit
       const transformationName = await arg('Enter a name for this transformations:');
-      persisted[functions['camelCase'](transformationName)] = operations;
+      persisted[await functions['camelCase'](transformationName)] = operations;
       await cache.store('persisted', persisted);
       break loop;
     }
@@ -1189,7 +1201,7 @@ loop: while (true) {
         },
         Object.keys(persisted).map((name) => {
           return {
-            name: functions['reverseCamelCase'](name),
+            name: reverse(name),
             value: name,
           };
         }),
@@ -1207,7 +1219,7 @@ loop: while (true) {
         }
       } else {
         const savedTransformation = persisted[savedTransformationName];
-        const result = runAllTransformations(clipboardText, savedTransformation);
+        const result = await runAllTransformations(clipboardText, savedTransformation);
         clipboardText = result.text;
         operations = result.operation;
         last = [];
@@ -1238,7 +1250,7 @@ loop: while (true) {
     default: {
       const result: TransformedOperation & { perform?: boolean } =
         transformation.type === 'run'
-          ? runAllTransformations(clipboardText, transformation.operations)
+          ? await runAllTransformations(clipboardText, transformation.operations)
           : await handleTransformation(clipboardText, transformation);
 
       // mark to finish if cmd+enter was pressed in the params prompt
