@@ -1,4 +1,4 @@
-// Name: Merge / Split Alfred Clipboard
+// Name: Merge / Split Clipboard
 // Description: Merge or split clipboard content using Alfred app's clipboard
 
 import '@johnlindquist/kit';
