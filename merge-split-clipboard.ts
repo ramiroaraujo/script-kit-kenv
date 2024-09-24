@@ -1,7 +1,8 @@
 // Name: (WIP) Merge / Split Clipboard
 // Description: Merge or split clipboard content from clipboard history
+// Disabled: true
 
-import '@johnlindquist/kit';
+import '../.kit';
 
 const getMergedClipboards = async (count: number, separator: string) => {
   const history = await getClipboardHistory();
