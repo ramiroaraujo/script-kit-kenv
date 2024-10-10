@@ -1083,7 +1083,6 @@ loop: while (true) {
     [...operationOptions, ...options, ...savedTransformations]
       .map((option) => {
         // hide init if there are already operations
-        debugger;
         if (option.value.key === 'init' && operations.length) return null;
         // hide last transformation if there is none, or already performed operations
         if (option.value.key === 'last' && (!last.length || operations.length)) return null;
@@ -1237,7 +1236,7 @@ loop: while (true) {
         value: clipboardText,
         onSubmit: (value) => {
           if (value === clipboardText) {
-            notify({ title: 'Transformed text is the same', message: 'No changes applied' });
+            notify({ title: 'Transformed text is the same', subtitle: 'No changes applied' });
             return;
           }
 
@@ -1258,13 +1257,13 @@ loop: while (true) {
 
       // don't transform if result is empty
       if (/^\s*$/.test(result.text)) {
-        notify({ title: 'Transformed text is empty', message: 'No changes applied' });
+        notify({ title: 'Transformed text is empty', subtitle: 'No changes applied' });
         break;
       }
 
       // don't store operation if result is the same as previous
       if (result.text === clipboardText) {
-        notify({ title: 'Transformed text is the same', message: 'No changes applied' });
+        notify({ title: 'Transformed text is the same', subtitle: 'No changes applied' });
         break;
       }
 
@@ -1288,4 +1287,4 @@ loop: while (true) {
 await cache.store('last', operations);
 await clipboard.writeText(clipboardText);
 
-notify({ title: 'Text transformation applied!', message: 'Text copied to clipboard' });
+notify({ title: 'Text transformation applied!', subtitle: 'Text copied to clipboard' });
