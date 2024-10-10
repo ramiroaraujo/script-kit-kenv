@@ -1047,7 +1047,7 @@ const runAllTransformations = async (input: string, operations: Operation[]) => 
 let clipboardText = await clipboard.readText();
 
 if (clipboardText.trim() === '') {
-  notify('Clipboard is empty or not a valid text');
+  notify({ title: 'Clipboard is empty or not a valid text' });
   exit();
 }
 
@@ -1213,7 +1213,7 @@ loop: while (true) {
         if (value === 'yes') {
           delete persisted[savedTransformationName];
           await cache.store('persisted', persisted);
-          notify(`Transformation ${savedTransformationName} deleted`);
+          notify({ title: `Transformation ${savedTransformationName} deleted`, silent: true });
           exit();
         }
       } else {
@@ -1236,7 +1236,10 @@ loop: while (true) {
         value: clipboardText,
         onSubmit: (value) => {
           if (value === clipboardText) {
-            notify({ title: 'Transformed text is the same', subtitle: 'No changes applied' });
+            notify({
+              title: 'Transformed text is the same',
+              subtitle: 'No changes applied',
+            });
             return;
           }
 
@@ -1257,13 +1260,19 @@ loop: while (true) {
 
       // don't transform if result is empty
       if (/^\s*$/.test(result.text)) {
-        notify({ title: 'Transformed text is empty', subtitle: 'No changes applied' });
+        notify({
+          title: 'Transformed text is empty',
+          subtitle: 'No changes applied',
+        });
         break;
       }
 
       // don't store operation if result is the same as previous
       if (result.text === clipboardText) {
-        notify({ title: 'Transformed text is the same', subtitle: 'No changes applied' });
+        notify({
+          title: 'Transformed text is the same',
+          subtitle: 'No changes applied',
+        });
         break;
       }
 
@@ -1287,4 +1296,8 @@ loop: while (true) {
 await cache.store('last', operations);
 await clipboard.writeText(clipboardText);
 
-notify({ title: 'Text transformation applied!', subtitle: 'Text copied to clipboard' });
+notify({
+  title: 'Text transformation applied!',
+  subtitle: 'Text copied to clipboard',
+  silent: true,
+});
