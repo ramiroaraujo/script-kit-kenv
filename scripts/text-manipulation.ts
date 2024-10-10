@@ -904,6 +904,13 @@ const savedTransformations = Object.keys(persisted).map((name) => {
   } as TransformChoice;
 });
 
+const notifyNoChanges = () => {
+  notify({
+    title: 'Transformed text is the same',
+    subtitle: 'No changes applied',
+  });
+};
+
 // main (non transform) operations
 const operationOptions: TransformChoice[] = [
   {
@@ -1236,10 +1243,7 @@ loop: while (true) {
         value: clipboardText,
         onSubmit: (value) => {
           if (value === clipboardText) {
-            notify({
-              title: 'Transformed text is the same',
-              subtitle: 'No changes applied',
-            });
+            notifyNoChanges();
             return;
           }
 
@@ -1260,19 +1264,13 @@ loop: while (true) {
 
       // don't transform if result is empty
       if (/^\s*$/.test(result.text)) {
-        notify({
-          title: 'Transformed text is empty',
-          subtitle: 'No changes applied',
-        });
+        notifyNoChanges();
         break;
       }
 
       // don't store operation if result is the same as previous
       if (result.text === clipboardText) {
-        notify({
-          title: 'Transformed text is the same',
-          subtitle: 'No changes applied',
-        });
+        notifyNoChanges();
         break;
       }
 
