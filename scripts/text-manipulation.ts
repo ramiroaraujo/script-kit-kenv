@@ -22,7 +22,10 @@ type TransformedOperation = {
 type TransformValue = {
   key: string;
   type?: 'prompt' | 'run';
-  parameter?: PromptConfig;
+  parameter?:
+    | PromptConfig
+    | PromptConfig[]
+    | { name: string; description: string; type: 'clipboard-search' };
   operations?: Operation[];
 };
 type TransformChoice = Choice & { value?: TransformValue };
@@ -126,6 +129,93 @@ const operationOptions: TransformChoice[] = [
 const handleTransformation = async (text: string, transformation: TransformValue) => {
   const { key, parameter: config } = transformation;
 
+  // Handle special clipboard-search type
+  if (config && !Array.isArray(config) && 'type' in config && config.type === 'clipboard-search') {
+    const { ClipboardService } = await import('../lib/clipboard-service');
+    const db = new ClipboardService();
+
+    // Helper to get filtered clipboards (similar to merge-clipboard.ts)
+    const getFilteredClipboards = async (
+      filter: string,
+      count?: number,
+    ): Promise<{ ROWID: number; item: string }[]> => {
+      if (!filter) {
+        let sql = `SELECT ROWID, item
+                   FROM clipboard
+                   WHERE dataType = 0
+                   AND item NOT LIKE '%\n%'
+                   ORDER BY ROWID DESC`;
+        const params: number[] = [];
+        if (count) {
+          sql += ` LIMIT ?`;
+          params.push(count);
+        }
+        return db.raw(sql, params) as { ROWID: number; item: string }[];
+      }
+
+      let sql = `SELECT ROWID, item
+                 FROM clipboard
+                 WHERE dataType = 0
+                 AND item LIKE ?
+                 AND item NOT LIKE '%\n%'
+                 ORDER BY ROWID DESC`;
+      const params: (string | number)[] = [`%${filter}%`];
+      if (count) {
+        sql += ` LIMIT ?`;
+        params.push(count);
+      }
+      return db.raw(sql, params) as { ROWID: number; item: string }[];
+    };
+
+    // Show clipboard search UI
+    const selectedText = await arg(
+      {
+        placeholder: 'Search clipboard for text to append',
+        hint: 'Type to filter clipboard items',
+        flags: { perform: { name: 'Transform and finish', shortcut: 'cmd+enter' } },
+        onEscape: async () => {
+          db.close();
+          await handleEscape(false);
+        },
+      },
+      async (input) => {
+        const items = await getFilteredClipboards(input, 10);
+        return items.map((item) => ({
+          name: item.item.substring(0, 80) + (item.item.length > 80 ? '...' : ''),
+          value: item.item.trim(),
+          preview: async () => {
+            try {
+              const result = await functions[key](text, item.item.trim());
+              return md(`<pre>${result}</pre>`);
+            } catch (e) {
+              return md(`<pre>${text}</pre>`);
+            }
+          },
+        }));
+      },
+    );
+
+    db.close();
+
+    let transform = text;
+    try {
+      transform = (await functions[key](text, selectedText)).toString();
+    } catch (e) {
+      // Handle the error
+    }
+
+    return {
+      text: transform,
+      operation: [
+        {
+          name: key,
+          params: [selectedText],
+        },
+      ],
+      perform: flag.perform,
+    } as TransformedOperation & { perform: boolean };
+  }
+
   const processConfig = async (configItem: PromptConfig, acc: string[] = []) => {
     return await arg(
       {
@@ -159,8 +249,8 @@ const handleTransformation = async (text: string, transformation: TransformValue
   let paramValues;
   if (Array.isArray(config)) {
     paramValues = await processAllConfigs(config);
-  } else if (config) {
-    paramValues = [await processConfig(config)];
+  } else if (config && !('type' in config && config.type === 'clipboard-search')) {
+    paramValues = [await processConfig(config as PromptConfig)];
   } else {
     paramValues = [];
   }

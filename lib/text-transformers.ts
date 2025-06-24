@@ -70,6 +70,25 @@ export const transformations: Transformation[] = [
   },
   {
     option: {
+      name: 'Append from Clipboard',
+      description: 'Search and append text from clipboard to all lines',
+      value: {
+        key: 'appendFromClipboard',
+        parameter: {
+          name: 'clipboardSearch',
+          description: 'Search clipboard for text to append',
+          type: 'clipboard-search',
+        },
+      },
+    },
+    function: async (text, suffix) =>
+      text
+        .split('\n')
+        .map((line) => line + suffix)
+        .join('\n'),
+  },
+  {
+    option: {
       name: 'Base64 Decode',
       description: 'Decode text using Base64',
       value: { key: 'base64Decode' },
@@ -526,6 +545,25 @@ export const transformations: Transformation[] = [
           name: 'Text',
           description: 'Enter text to prepend to all lines',
           defaultValue: '',
+        },
+      },
+    },
+    function: async (text, prefix) =>
+      text
+        .split('\n')
+        .map((line) => prefix + line)
+        .join('\n'),
+  },
+  {
+    option: {
+      name: 'Prepend from Clipboard',
+      description: 'Search and prepend text from clipboard to all lines',
+      value: {
+        key: 'prependFromClipboard',
+        parameter: {
+          name: 'clipboardSearch',
+          description: 'Search clipboard for text to prepend',
+          type: 'clipboard-search',
         },
       },
     },
