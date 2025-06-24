@@ -72,13 +72,13 @@ const filter = await arg(
 async function generateFilterPreview(input: string, isRegexMode: boolean): Promise<string> {
   const getAllItemsSql = `SELECT ROWID, * FROM clipboard WHERE dataType = 0 ORDER BY ROWID DESC LIMIT 1000`;
   const allItems = db.raw(getAllItemsSql) as any[];
-  
+
   // Map items to ensure ROWID is available
-  const mappedItems = allItems.map(item => ({
+  const mappedItems = allItems.map((item) => ({
     ...item,
-    ROWID: item.ROWID || item.rowid
+    ROWID: item.ROWID || item.rowid,
   })) as ClipboardItem[];
-  
+
   const filteredItems = getFilteredClipboards(mappedItems, input, isRegexMode);
 
   if (filteredItems.length === 0) {
@@ -107,9 +107,9 @@ const getAllItemsSql = `SELECT ROWID, * FROM clipboard WHERE dataType = 0 ORDER 
 const allItems = db.raw(getAllItemsSql) as any[];
 
 // Map items to ensure ROWID is available (SQLite might return as lowercase)
-const mappedItems = allItems.map(item => ({
+const mappedItems = allItems.map((item) => ({
   ...item,
-  ROWID: item.ROWID || item.rowid
+  ROWID: item.ROWID || item.rowid,
 })) as ClipboardItem[];
 
 // Debug: Check if ROWID is being returned
