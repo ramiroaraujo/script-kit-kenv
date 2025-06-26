@@ -109,3 +109,6 @@ tmp
 cache
 
 *.traineddata
+
+.DS_Store
+
